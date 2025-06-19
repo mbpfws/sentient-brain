@@ -1,7 +1,6 @@
 import { PrismaClient, Document, Project, PendingDocument, PendingDocumentStatus } from '../generated/prisma';
 import crypto from 'crypto';
 import { genAI } from '../lib/gemini-client.js'; // Import shared Gemini client
-import { GoogleSearch } from '@google/generative-ai/server'; // For Google Search via Gemini
 
 // Interface for the context required to call other MCP tools
 export interface ToolCallingContext {
@@ -96,7 +95,7 @@ async function attemptGoogleSearchSiteMap(
         console.log(`[DocDiscovery] Attempt 2: Mapping site with Google Search (site:${baseUrl})`);
         const model = genAI.getGenerativeModel({ 
             model: 'gemini-1.5-flash', 
-            tools: [{googleSearch: new GoogleSearch()}]
+            tools: [{googleSearchRetrieval: {}}]
         });
         const prompt = `Find all unique documentation pages available under the URL path starting with ${baseUrl}. List their full URLs and page titles. Focus on HTML pages, not PDFs or other file types unless they are primary documentation.`;
         
@@ -223,7 +222,10 @@ async function scrapeWithGeminiUrl(
 
         const prompt = `Please act as a web scraper. Fetch the content from the provided URL and return the full, clean Markdown representation of the main content. Also, provide the document's primary title.\n\nURL: ${url}\n\nRespond in a JSON format with two keys: "title" and "markdownContent".`;
 
-        const result = await model.generateContent(prompt);
+        const result = await model.generateContent({
+            contents: [{ parts: [{ text: prompt }] }],
+            tools: [{ googleSearchRetrieval: {} }]
+        });
         const responseText = result.response.text();
 
         const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);

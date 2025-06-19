@@ -12,7 +12,7 @@
 	"author": "",
 	"license": "ISC",
 	"dependencies": {
-		"@google/genai": "^0.24.1",
+		"@google/genai": "^1.5.1",
 		"@modelcontextprotocol/sdk": "^1.12.1",
 		"@prisma/client": "^6.10.1",
 		"chokidar": "^4.0.3",
