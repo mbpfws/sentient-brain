@@ -1,0 +1,71 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  alias       String   @unique
+  root_path   String
+  description String?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  code_files CodeFile[]
+  guides     Guide[]
+}
+
+model CodeFile {
+  id                  Int      @id @default(autoincrement())
+  file_path           String   @unique
+  file_name           String
+  parent_directory    String
+  file_hash           String
+  size_bytes          Int
+  last_modified_at_fs DateTime
+  description         String?
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  project    Project @relation(fields: [project_id], references: [id])
+  project_id Int
+
+  @@index([project_id])
+}
+
+model Guide {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  project    Project @relation(fields: [project_id], references: [id])
+  project_id Int
+
+  implementations Implementation[]
+
+  @@index([project_id])
+}
+
+model Implementation {
+  id           Int      @id @default(autoincrement())
+  title        String
+  code_snippet String
+  description  String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  guide    Guide @relation(fields: [guide_id], references: [id])
+  guide_id Int
+
+  @@index([guide_id])
+}
