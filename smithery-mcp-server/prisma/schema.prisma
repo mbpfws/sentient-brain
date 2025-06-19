@@ -19,9 +19,10 @@ model Project {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
 
-  code_files CodeFile[]
-  guides     Guide[]
-  documents  Document[]
+  code_files        CodeFile[]
+  guides            Guide[]
+  documents         Document[]
+  pending_documents PendingDocument[]
 }
 
 model CodeFile {
@@ -101,4 +102,31 @@ model DocumentChunk {
   updated_at   DateTime @updatedAt
 
   @@index([document_id])
+}
+
+enum PendingDocumentStatus {
+  DISCOVERED
+  SCRAPE_PENDING
+  SCRAPING
+  SCRAPED
+  FAILED_SCRAPE
+}
+
+model PendingDocument {
+  id                 Int                   @id @default(autoincrement())
+  project_id         Int
+  project            Project               @relation(fields: [project_id], references: [id])
+  url                String
+  title              String?
+  status             PendingDocumentStatus @default(DISCOVERED)
+  discovery_method   String?               // e.g., 'firecrawl_map', 'google_search', 'shallow_crawl'
+  depth              Int?                  // Optional depth if provided by discovery method
+  last_attempted_at  DateTime?             // For retry logic
+  error_message      String?               // If an attempt fails
+  created_at         DateTime              @default(now())
+  updated_at         DateTime              @updatedAt
+
+  @@unique([project_id, url]) // Ensure URL is unique per project
+  @@index([project_id])
+  @@index([status])
 }
