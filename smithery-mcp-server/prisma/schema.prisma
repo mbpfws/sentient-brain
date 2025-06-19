@@ -21,6 +21,7 @@ model Project {
 
   code_files CodeFile[]
   guides     Guide[]
+  documents  Document[]
 }
 
 model CodeFile {
@@ -68,4 +69,36 @@ model Implementation {
   guide_id Int
 
   @@index([guide_id])
+}
+
+model Document {
+  id             Int      @id @default(autoincrement())
+  source_url     String?  // For web-based documents
+  file_path      String?  // For local file-based documents
+  title          String?
+  markdown_content String
+  content_hash   String   @unique // For deduplication
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  project    Project @relation(fields: [project_id], references: [id])
+  project_id Int
+
+  chunks DocumentChunk[]
+
+  @@index([project_id])
+  @@index([content_hash])
+}
+
+model DocumentChunk {
+  id           Int      @id @default(autoincrement())
+  document_id  Int
+  document     Document @relation(fields: [document_id], references: [id])
+  chunk_text   String
+  // vector_embedding Bytes? // To be added later
+  order        Int      // To maintain the order of chunks
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@index([document_id])
 }
