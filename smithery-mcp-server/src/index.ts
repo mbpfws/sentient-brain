@@ -4,7 +4,7 @@ import { indexCodebase } from './services/code-indexing.service.js';
 import { fileWatcherService } from './services/file-watcher.service.js';
 import { Project } from './generated/prisma/index.js';
 import { createGuide, findGuides, createImplementation, GuideCreateInput, ImplementationCreateInput } from './services/guides.service.js';
-import { ingestWebDocument, IngestWebDocumentInput, ToolCallingContext } from './services/document-ingestion.service.js';
+import { ingestWebDocument, IngestWebDocumentInput, ToolCallingContext, discoverDocumentStructure, DiscoverDocumentStructureInput } from './services/document-ingestion.service.js';
 
 // Define configuration schema to require a Gemini API key
 export const configSchema = z.object({
@@ -133,6 +133,25 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
       // For now, we'll assume the console logs in the service are sufficient to indicate new vs. existing.
       // A more robust way might involve the service returning a flag.
       return { content: [{ type: 'text', text: `Processing complete for document from URL '${input.url}'. ID: ${document.id}, Title: '${document.title}'. Check server logs for ingestion details.` }] };
+    }
+  );
+
+  server.tool(
+    'discover_document_structure',
+    'Discovers all unique page URLs and titles under a base documentation URL for a project.',
+    {
+      project_alias: z.string().describe('The alias of the project for which to discover documents.'),
+      base_url: z.string().url().describe('The base URL of the documentation site to scan (e.g., https://docs.example.com/).')
+    },
+    async (input: DiscoverDocumentStructureInput) => {
+      const toolCallingCtx: ToolCallingContext = {
+        callTool: server.callTool.bind(server) // Pass the server's callTool method for potential sub-calls
+      };
+      const result = await discoverDocumentStructure(toolCallingCtx, input);
+      if (!result.success) {
+        return { content: [{ type: 'text', text: `Failed to discover document structure for '${input.base_url}': ${result.message}` }] };
+      }
+      return { content: [{ type: 'text', text: `Successfully initiated discovery for '${input.base_url}'. Found ${result.discovered_count || 0} pages. Check server logs and PendingDocuments table.` }] };
     }
   );
 
