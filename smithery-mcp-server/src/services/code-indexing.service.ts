@@ -5,11 +5,10 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 import { promises as fs } from 'fs';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { genAI } from '../lib/gemini-client.js';
 
-// Initialize Prisma and Gemini clients
+// Initialize Prisma client
 const prisma = new PrismaClient();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 
 /**
  * Generates an SHA-256 hash for a given file.

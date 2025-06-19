@@ -1,5 +1,6 @@
 import { PrismaClient, Document, Project } from '../generated/prisma';
 import crypto from 'crypto';
+import { genAI } from '../lib/gemini-client.js'; // Import shared Gemini client
 
 // Interface for the context required to call other MCP tools
 export interface ToolCallingContext {
@@ -12,23 +13,59 @@ export interface ToolCallingContext {
 
 const prisma = new PrismaClient();
 
+// --- Scrape Strategy 1: Gemini URL Grounding (Free Tier) ---
+async function scrapeWithGeminiUrl(
+    url: string
+): Promise<{ success: boolean; data?: { markdown: string; title?: string }; error?: string }> {
+    try {
+        console.log(`[DocIngestion] Attempt 1: Scraping with Gemini URL grounding for ${url}`);
+        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+
+        const prompt = `Please act as a web scraper. Fetch the content from the provided URL and return the full, clean Markdown representation of the main content. Also, provide the document's primary title.\n\nURL: ${url}\n\nRespond in a JSON format with two keys: "title" and "markdownContent".`;
+
+        const result = await model.generateContent(prompt);
+        const responseText = result.response.text();
+
+        // Attempt to parse the JSON from the response, which might be in a markdown block
+        const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
+        if (jsonMatch && jsonMatch[1]) {
+            const parsed = JSON.parse(jsonMatch[1]);
+            const markdown = parsed.markdownContent;
+            const title = parsed.title;
+
+            if (markdown && markdown.trim().length > 100) {
+                console.log(`[DocIngestion] Gemini scrape successful for ${url}`);
+                return { success: true, data: { markdown, title } };
+            }
+        }
+        
+        // Fallback if JSON is not found or content is trivial
+        console.warn(`[DocIngestion] Gemini did not return valid JSON or content was trivial for ${url}.`);
+        return { success: false, error: 'Gemini returned no or trivial markdown content.' };
+
+    } catch (error: any) {
+        console.error(`[DocIngestion] Gemini URL grounding failed for ${url}:`, error);
+        return { success: false, error: error.message || 'Unknown Gemini error' };
+    }
+}
+
+// --- Scrape Strategy 2: Firecrawl via Toolbox (Paid, Robust) ---
 async function realFirecrawlScrape(
     ctx: ToolCallingContext,
     url: string
 ): Promise<{ success: boolean; data?: { markdown: string; title?: string }; error?: string }> {
     try {
-        console.log(`[DocIngestion] Attempting to scrape URL via @smithery/toolbox: ${url}`);
+        console.log(`[DocIngestion] Attempt 2: Scraping with Firecrawl via @smithery/toolbox for ${url}`);
         const toolboxResponse = await ctx.callTool(
-            '@smithery/toolbox', // Target the Smithery Toolbox server
-            'use_tool',          // The tool on the Toolbox to execute other MCP tool calls
+            '@smithery/toolbox',
+            'use_tool',
             {
-                // Arguments for 'use_tool'
-                target_server_id: 'firecrawl-mcp-server', // The actual server we want to use
-                tool_name: 'scrape',                      // The tool on firecrawl-mcp-server
-                tool_args: {                              // Arguments for firecrawl's 'scrape' tool
+                target_server_id: 'firecrawl-mcp-server',
+                tool_name: 'scrape',
+                tool_args: {
                     url: url,
                     formats: ['markdown'],
-                    onlyMainContent: true, // Good default to get cleaner content
+                    onlyMainContent: true,
                 }
             }
         );
@@ -45,12 +82,10 @@ async function realFirecrawlScrape(
                     },
                 };
             } else {
-                const errorMessage = firecrawlResult.error || (firecrawlResult.data ? 'No markdown content in firecrawl response' : 'Unknown firecrawl response structure');
-                console.error(`[DocIngestion] Firecrawl scrape via Toolbox failed for ${url}: ${errorMessage}`, firecrawlResult);
+                const errorMessage = firecrawlResult.error || 'Unknown firecrawl response structure';
                 return { success: false, error: errorMessage };
             }
         } else {
-            console.error(`[DocIngestion] Unexpected response structure from @smithery/toolbox for ${url}:`, toolboxResponse);
             return { success: false, error: 'Unexpected response structure from @smithery/toolbox' };
         }
     } catch (error: any) {
@@ -64,9 +99,9 @@ export interface IngestWebDocumentInput {
     url: string;
 }
 
-// Updated to accept ToolCallingContext
+// --- Main Ingestion Orchestrator ---
 export async function ingestWebDocument(
-    ctx: ToolCallingContext, // Added context parameter
+    ctx: ToolCallingContext,
     input: IngestWebDocumentInput
 ): Promise<Document | null> {
     const { project_alias, url } = input;
@@ -79,10 +114,18 @@ export async function ingestWebDocument(
 
     console.log(`[DocIngestion] Starting ingestion for URL: ${url} for project ${project_alias}`);
 
-    const scrapeResult = await realFirecrawlScrape(ctx, url); // Pass context
+    // --- Orchestration Logic ---
+    let scrapeResult = await scrapeWithGeminiUrl(url);
+
+    if (!scrapeResult.success) {
+        console.log(`[DocIngestion] Gemini scrape failed. Falling back to Firecrawl.`);
+        scrapeResult = await realFirecrawlScrape(ctx, url);
+    }
+
+    // TODO: Add 3rd and 4th fallback attempts here in the future.
 
     if (!scrapeResult.success || !scrapeResult.data?.markdown) {
-        console.error(`[DocIngestion] Failed to process URL '${url}': ${scrapeResult.error || 'No markdown content'}`);
+        console.error(`[DocIngestion] All scraping attempts failed for URL '${url}': ${scrapeResult.error || 'No markdown content'}`);
         return null;
     }
 
