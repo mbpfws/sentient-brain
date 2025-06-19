@@ -33,7 +33,7 @@ if config.config_file_name is not None:
 # Import Base and engine from your application's database setup
 from mcp_server.database.database import Base, engine # MODIFIED: Added engine
 # Import all your models here so Alembic can see them
-from mcp_server.database.models import code_indexing_models # Add other models as you create them
+from mcp_server.database.models import code_indexing_models, project_models # Add other models as you create them
 
 target_metadata = Base.metadata
 
