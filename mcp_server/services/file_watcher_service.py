@@ -61,7 +61,23 @@ class WatcherService:
     """Manages multiple file system observers for all registered projects."""
 
     def __init__(self):
-        self.observers = []
+        self.observers = {}
+
+    def watch_project(self, project):
+        """Starts a new observer for a single project if not already watched."""
+        if project.alias in self.observers:
+            return
+
+        path = Path(project.root_path)
+        if path.is_dir():
+            event_handler = CodebaseChangeEventHandler(project_alias=project.alias)
+            observer = Observer()
+            observer.schedule(event_handler, str(path), recursive=True)
+            observer.start()
+            self.observers[project.alias] = observer
+            logging.info(f"[Watcher] Started monitoring project '{project.alias}' at {project.root_path}")
+        else:
+            logging.warning(f"[Watcher] Project '{project.alias}' root path not found or not a directory: {project.root_path}")
 
     def start(self):
         db_session_gen = database.get_db()
@@ -69,24 +85,18 @@ class WatcherService:
         try:
             projects = code_indexing_service.get_projects(db)
             for project in projects:
-                path = Path(project.root_path)
-                if path.is_dir():
-                    event_handler = CodebaseChangeEventHandler(project_alias=project.alias)
-                    observer = Observer()
-                    observer.schedule(event_handler, str(path), recursive=True)
-                    observer.start()
-                    self.observers.append(observer)
-                    logging.info(f"[Watcher] Started monitoring project '{project.alias}' at {project.root_path}")
-                else:
-                    logging.warning(f"[Watcher] Project '{project.alias}' root path not found or not a directory: {project.root_path}")
+                self.watch_project(project)
         finally:
             db.close()
 
     def stop(self):
-        for observer in self.observers:
+        for alias, observer in self.observers.items():
             observer.stop()
+            logging.info(f"[Watcher] Stopped monitoring project '{alias}'.")
+        for observer in self.observers.values():
             observer.join()
-        logging.info("[Watcher] All observers stopped.")
+        self.observers.clear()
+        logging.info("[Watcher] All observer threads joined.")
 
 
 # Global instance of the watcher service

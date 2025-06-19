@@ -72,6 +72,11 @@ async def index_codebase(db: Session, project_alias: str, root_path: str) -> Dic
         db.add(project)
         db.commit()
         db.refresh(project)
+
+        # Use a local import to prevent circular dependency
+        from .file_watcher_service import file_watcher_service
+        # Immediately start watching the new project without needing a server restart
+        file_watcher_service.watch_project(project)
     elif str(source_path.resolve()) != project.root_path:
         raise ValueError(f"Project alias '{project_alias}' exists but is mapped to a different root path: {project.root_path}")
 
