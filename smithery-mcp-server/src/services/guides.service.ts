@@ -17,7 +17,12 @@ export type ImplementationCreateInput = {
 };
 
 /**
- * Creates a new guide and links it to a project.
+ * Creates a new guide associated with a project identified by its alias.
+ *
+ * If the specified project does not exist, returns null.
+ *
+ * @param data - Input containing the guide's title, description, and the target project's alias
+ * @returns The created guide, or null if the project is not found
  */
 export async function createGuide(data: GuideCreateInput): Promise<Guide | null> {
     const project = await prisma.project.findUnique({ where: { alias: data.project_alias } });
@@ -38,7 +43,11 @@ export async function createGuide(data: GuideCreateInput): Promise<Guide | null>
 }
 
 /**
- * Finds guides based on a search query.
+ * Retrieves guides for a specified project whose title or description matches the search query.
+ *
+ * @param project_alias - The alias identifying the project whose guides are being searched
+ * @param query - The search string to match against guide titles and descriptions
+ * @returns An array of guides matching the query, each including their related implementations
  */
 export async function findGuides(project_alias: string, query: string): Promise<Guide[]> {
      const guides = await prisma.guide.findMany({
@@ -59,7 +68,10 @@ export async function findGuides(project_alias: string, query: string): Promise<
 }
 
 /**
- * Creates a new implementation for a specific guide.
+ * Creates a new implementation entry linked to a specified guide.
+ *
+ * @param data - The implementation details, including title, code snippet, optional description, and the guide ID to associate with.
+ * @returns The newly created implementation.
  */
 export async function createImplementation(data: ImplementationCreateInput): Promise<Implementation> {
     const implementation = await prisma.implementation.create({

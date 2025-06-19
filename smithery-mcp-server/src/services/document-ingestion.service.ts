@@ -19,7 +19,11 @@ interface DiscoveredPageInfo {
     depth?: number;
 }
 
-// --- Helper to upsert discovered documents ---
+/**
+ * Upserts a list of discovered pages as pending documents for a project.
+ *
+ * For each page, creates or updates a pending document entry keyed by project ID and URL, setting its status to DISCOVERED along with metadata such as title, discovery method, and depth.
+ */
 async function upsertPendingDocuments(
     projectId: number,
     pages: DiscoveredPageInfo[],
@@ -49,7 +53,14 @@ async function upsertPendingDocuments(
     console.log(`[DocDiscovery] Upserted ${pages.length} pending documents using ${discoveryMethod}.`);
 }
 
-// --- Site Mapping Strategy 1: Firecrawl 'map' tool ---
+/**
+ * Attempts to discover documentation pages under a base URL using the Firecrawl 'map' tool.
+ *
+ * Calls the Firecrawl 'map' tool via the provided context to retrieve a list of URLs (and optionally titles) from the target site. Returns an array of discovered page information, using the URL as the title if no title is provided. Returns an empty array if the tool fails or returns unexpected data.
+ *
+ * @param baseUrl - The base URL of the site to map for documentation pages
+ * @returns An array of discovered page information with URLs and titles
+ */
 async function attemptFirecrawlMap(
     ctx: ToolCallingContext,
     baseUrl: string
@@ -87,7 +98,14 @@ async function attemptFirecrawlMap(
     }
 }
 
-// --- Site Mapping Strategy 2: Google Search via Gemini ---
+/**
+ * Attempts to discover documentation pages under a given base URL using Google Search via the Gemini generative model.
+ *
+ * Sends a prompt to Gemini to find unique documentation pages, focusing on HTML content, and expects structured results with URLs and titles. Currently returns an empty array as parsing of Gemini's function call output is not implemented.
+ *
+ * @param baseUrl - The base URL to search for documentation pages under
+ * @returns An array of discovered page information, or an empty array if no actionable results are found
+ */
 async function attemptGoogleSearchSiteMap(
     baseUrl: string
 ): Promise<DiscoveredPageInfo[]> {
@@ -122,7 +140,11 @@ async function attemptGoogleSearchSiteMap(
     }
 }
 
-// --- Site Mapping Strategy 3: Firecrawl 'crawl' (shallow) ---
+/**
+ * Attempts to discover documentation pages by performing a shallow crawl of the given base URL using the Firecrawl 'crawl' tool.
+ *
+ * Returns an array of discovered page information, including URLs and titles when available. If the crawl fails or returns unexpected data, returns an empty array.
+ */
 async function attemptFirecrawlShallowCrawl(
     ctx: ToolCallingContext,
     baseUrl: string
@@ -166,6 +188,13 @@ export interface DiscoverDocumentStructureInput {
     base_url: string; // e.g., https://docs.example.com/
 }
 
+/**
+ * Discovers documentation pages under a base URL using multiple strategies and records them as pending documents for a project.
+ *
+ * Attempts discovery via Firecrawl's 'map' tool, Google Search via Gemini, and Firecrawl's shallow 'crawl', selecting the method that yields the most results. Upserts discovered pages into the project's pending documents. Returns the outcome and the number of pages discovered.
+ *
+ * @returns An object indicating success, a message, and the count of discovered pages if successful.
+ */
 export async function discoverDocumentStructure(
     ctx: ToolCallingContext,
     input: DiscoverDocumentStructureInput
@@ -212,7 +241,14 @@ export async function discoverDocumentStructure(
 }
 
 
-// --- Scrape Strategy 1: Gemini URL Grounding (Free Tier) ---
+/**
+ * Attempts to scrape the main content and title from a web page using Gemini AI with Google Search retrieval.
+ *
+ * Fetches the specified URL, prompting Gemini to return the primary title and a Markdown representation of the main content in JSON format. Validates that the returned Markdown content is non-trivial.
+ *
+ * @param url - The URL of the web page to scrape.
+ * @returns An object indicating success and, if successful, the Markdown content and title; otherwise, an error message.
+ */
 async function scrapeWithGeminiUrl(
     url: string
 ): Promise<{ success: boolean; data?: { markdown: string; title?: string }; error?: string }> {
@@ -249,7 +285,14 @@ async function scrapeWithGeminiUrl(
     }
 }
 
-// --- Scrape Strategy 2: Firecrawl via Toolbox (Paid, Robust) ---
+/**
+ * Scrapes the main content of a web page as Markdown using the Firecrawl tool via the toolbox service.
+ *
+ * Attempts to extract the page's Markdown content and title from the Firecrawl response. Returns an error message if scraping fails or the response structure is unexpected.
+ *
+ * @param url - The URL of the web page to scrape
+ * @returns An object indicating success, with the scraped Markdown and optional title if successful, or an error message if not
+ */
 async function realFirecrawlScrape(
     ctx: ToolCallingContext,
     url: string
@@ -299,7 +342,14 @@ export interface IngestWebDocumentInput {
     url: string;
 }
 
-// --- Main Ingestion Orchestrator ---
+/**
+ * Ingests a web document into the project database by scraping its content and storing it as a Markdown document.
+ *
+ * Attempts to scrape the specified URL using multiple strategies (Gemini, then Firecrawl). If successful, deduplicates by content hash and creates a new document record associated with the given project. Returns the created or existing document, or null if ingestion fails.
+ *
+ * @param input - Contains the project alias and the URL of the web document to ingest
+ * @returns The ingested Document entity, or null if ingestion was unsuccessful
+ */
 export async function ingestWebDocument(
     ctx: ToolCallingContext,
     input: IngestWebDocumentInput

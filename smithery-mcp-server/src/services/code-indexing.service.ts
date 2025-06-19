@@ -11,9 +11,10 @@ import { genAI } from '../lib/gemini-client.js';
 const prisma = new PrismaClient();
 
 /**
- * Generates an SHA-256 hash for a given file.
- * @param filePath The path to the file.
- * @returns A promise that resolves to the file's hash.
+ * Computes and returns the SHA-256 hash of the file at the specified path.
+ *
+ * @param filePath - Path to the file whose hash will be calculated
+ * @returns A promise that resolves to the hexadecimal SHA-256 hash string of the file's contents
  */
 async function getFileHash(filePath: string): Promise<string> {
     const fileBuffer = await fs.readFile(filePath);
@@ -23,9 +24,12 @@ async function getFileHash(filePath: string): Promise<string> {
 }
 
 /**
- * Generates a brief, one-sentence description of a code file using the Gemini API.
- * @param filePath The path to the file.
- * @returns A promise that resolves to the AI-generated description.
+ * Generates a concise, one-sentence summary of a code file's purpose using the Gemini AI model.
+ *
+ * Returns a fallback message if the file is too large, appears binary, or if AI generation fails.
+ *
+ * @param filePath - Path to the code file to summarize
+ * @returns The AI-generated description or a fallback message
  */
 async function generateAiDescription(filePath: string): Promise<string> {
     try {
@@ -59,10 +63,11 @@ Summary:`;
 }
 
 /**
- * Scans a directory, indexes all files, and stores them in the database,
- * associated with a project.
- * @param projectAlias The alias of the project to index.
- * @param rootPath The root directory path of the codebase.
+ * Recursively indexes all files in a project's codebase directory, storing file metadata and AI-generated descriptions in the database.
+ *
+ * @param projectAlias - The unique alias identifying the project.
+ * @param rootPath - The root directory path of the codebase to index.
+ * @returns The created project if a new project record was made; otherwise, null.
  */
 export async function indexCodebase(projectAlias: string, rootPath: string): Promise<Project | null> {
     console.log(`[Indexer] Starting indexing for project '${projectAlias}' at ${rootPath}`);
@@ -84,6 +89,13 @@ export async function indexCodebase(projectAlias: string, rootPath: string): Pro
     const absoluteRootPath = path.resolve(rootPath);
     const ignoredDirectories = ['node_modules', '.git', '__pycache__', '.vscode', '.idea', 'prisma'];
 
+    /**
+     * Recursively scans a directory, indexing each file by storing its metadata and an AI-generated description in the database.
+     *
+     * Skips ignored and hidden directories. For each file, computes its hash, gathers metadata, generates a summary, and upserts the information into the database. Introduces a delay between file operations to respect external API rate limits.
+     *
+     * @param directory - The absolute path of the directory to scan recursively
+     */
     async function scanDirectory(directory: string) {
         const entries = await fs.readdir(directory, { withFileTypes: true });
 
@@ -137,10 +149,12 @@ export async function indexCodebase(projectAlias: string, rootPath: string): Pro
 }
 
 /**
- * Updates an existing code file entry or creates a new one for a given path.
- * This is intended to be called by the file watcher.
- * @param projectAlias The alias of the project.
- * @param filePath The absolute path to the file.
+ * Updates or creates a code file entry in the database for the specified file path within a project.
+ *
+ * If the project does not exist, the operation is skipped. Intended for use by file watchers to synchronize file metadata and AI-generated descriptions with the database. Handles cases where the file may have been deleted before processing.
+ *
+ * @param projectAlias - The alias of the project.
+ * @param filePath - The absolute path to the file.
  */
 export async function updateOrCreateCodeFileByPath(projectAlias: string, filePath: string): Promise<void> {
     const project = await prisma.project.findUnique({ where: { alias: projectAlias } });
@@ -189,8 +203,9 @@ export async function updateOrCreateCodeFileByPath(projectAlias: string, filePat
 }
 
 /**
- * Deletes a code file entry from the database using its path.
- * @param filePath The absolute path to the file.
+ * Removes a code file record from the database by its absolute file path.
+ *
+ * If the file record does not exist, the operation is silently ignored.
  */
 export async function deleteCodeFileByPath(filePath: string): Promise<void> {
     try {
