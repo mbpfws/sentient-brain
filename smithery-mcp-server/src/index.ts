@@ -5,7 +5,7 @@ import { fileWatcherService } from './services/file-watcher.service.js';
 import { Project } from './generated/prisma/index.js';
 import { createGuide, findGuides, createImplementation, GuideCreateInput, ImplementationCreateInput } from './services/guides.service.js';
 import { ingestWebDocument, IngestWebDocumentInput, ToolCallingContext, discoverDocumentStructure, DiscoverDocumentStructureInput } from './services/document-ingestion.service.js';
-import { initializeSchema } from '../lib/weaviate.service.js';
+import { initializeSchema } from './lib/weaviate.service.js';
 
 // Define configuration schema to require a Gemini API key
 export const configSchema = z.object({
@@ -30,7 +30,7 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
   });
 
   // Start the file watcher service on server initialization
-  fileWatcherService.start().catch(console.error);
+  // fileWatcherService.start().catch(console.error); // Temporarily disabled due to Prisma dependency
 
   // --- Code Indexing Tools ---
 
@@ -131,7 +131,7 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
     },
     async (input: IngestWebDocumentInput) => {
       const toolCallingCtx: ToolCallingContext = {
-        callTool: server.callTool.bind(server) // Pass the server's callTool method
+        server: server // Pass the entire server instance
       };
       const document = await ingestWebDocument(toolCallingCtx, input);
       if (!document) {
@@ -154,7 +154,7 @@ export default function ({ config }: { config: z.infer<typeof configSchema> }) {
     },
     async (input: DiscoverDocumentStructureInput) => {
       const toolCallingCtx: ToolCallingContext = {
-        callTool: server.callTool.bind(server) // Pass the server's callTool method for potential sub-calls
+        server: server // Pass the entire server instance
       };
       const result = await discoverDocumentStructure(toolCallingCtx, input);
       if (!result.success) {
