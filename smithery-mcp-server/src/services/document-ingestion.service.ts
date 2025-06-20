@@ -1,6 +1,7 @@
-import { PrismaClient, Document, Project, PendingDocument, PendingDocumentStatus } from '../generated/prisma';
+// import { PrismaClient, Document, Project, PendingDocument, PendingDocumentStatus } from '../generated/prisma'; // Weaviate replaces Prisma for these
 import crypto from 'crypto';
 import { genAI } from '../lib/gemini-client.js'; // Import shared Gemini client
+import { weaviateClient, addDocumentSource, addDocumentChunk, getDocumentChunkBatcher } from '../lib/weaviate.service.js';
 
 // Interface for the context required to call other MCP tools
 export interface ToolCallingContext {
@@ -11,7 +12,27 @@ export interface ToolCallingContext {
     ) => Promise<any>; // The expected structure of the tool's response
 }
 
-const prisma = new PrismaClient();
+// const prisma = new PrismaClient(); // Prisma client removed
+
+// --- Helper to chunk markdown content --- 
+interface MarkdownChunk {
+    content: string;
+    order: number;
+    // Potentially add other metadata like headings later
+}
+
+function chunkMarkdownContent(markdown: string): MarkdownChunk[] {
+    if (!markdown || markdown.trim() === '') {
+        return [];
+    }
+    // Simple split by double newlines (paragraphs)
+    // More sophisticated chunking can be added later (e.g., by token count, respecting headings)
+    const paragraphs = markdown.split(/\n\s*\n/);
+    return paragraphs.map((p, index) => ({
+        content: p.trim(),
+        order: index,
+    })).filter(chunk => chunk.content.length > 0); // Filter out empty chunks
+}
 
 interface DiscoveredPageInfo {
     url: string;
@@ -19,34 +40,37 @@ interface DiscoveredPageInfo {
     depth?: number;
 }
 
-// --- Helper to upsert discovered documents ---
-async function upsertPendingDocuments(
-    projectId: number,
+// --- Helper to create DocumentSource objects from discovered pages ---
+async function createDocumentSourcesFromDiscovery(
+    projectAlias: string, // Changed from projectId to projectAlias
     pages: DiscoveredPageInfo[],
     discoveryMethod: string
 ): Promise<void> {
-    const operations = pages.map(page => 
-        prisma.pendingDocument.upsert({
-            where: { project_id_url: { project_id: projectId, url: page.url } },
-            update: {
-                title: page.title || page.url,
-                status: PendingDocumentStatus.DISCOVERED,
-                discovery_method: discoveryMethod,
-                depth: page.depth,
-                updated_at: new Date(),
-            },
-            create: {
-                project_id: projectId,
+    let createdCount = 0;
+    for (const page of pages) {
+        try {
+            // Check if a DocumentSource with this URL already exists for this projectAlias
+            // Weaviate's GraphQL query would be used here. For now, we'll assume we create or update.
+            // A more robust check would query Weaviate for an existing DocumentSource with the same URL and projectAlias.
+            // const existing = await weaviateClient.graphql.get()... (implementation detail for later)
+
+            const documentSourceData = {
                 url: page.url,
                 title: page.title || page.url,
-                status: PendingDocumentStatus.DISCOVERED,
-                discovery_method: discoveryMethod,
-                depth: page.depth,
-            }
-        })
-    );
-    await prisma.$transaction(operations);
-    console.log(`[DocDiscovery] Upserted ${pages.length} pending documents using ${discoveryMethod}.`);
+                sourceType: discoveryMethod, // e.g., 'sitemap_crawl', 'firecrawl_map'
+                projectId: projectAlias, // Using alias as projectId in Weaviate
+                lastCrawledAt: new Date(),
+                status: 'DISCOVERED', // Initial status
+                // depth: page.depth, // Add if 'depth' is part of DocumentSource schema
+                techStack: [], // Placeholder, can be enriched later
+            };
+            await addDocumentSource(documentSourceData);
+            createdCount++;
+        } catch (error) {
+            console.error(`[DocDiscovery] Error creating DocumentSource for URL '${page.url}':`, error);
+        }
+    }
+    console.log(`[DocDiscovery] Processed ${pages.length} discovered pages. Created/updated ${createdCount} DocumentSource entries using ${discoveryMethod}.`);
 }
 
 // --- Site Mapping Strategy 1: Firecrawl 'map' tool ---
@@ -171,10 +195,11 @@ export async function discoverDocumentStructure(
     input: DiscoverDocumentStructureInput
 ): Promise<{ success: boolean; message: string; discovered_count?: number }> {
     const { project_alias, base_url } = input;
-    const project = await prisma.project.findUnique({ where: { alias: project_alias } });
-    if (!project) {
-        return { success: false, message: `Project with alias '${project_alias}' not found.` };
-    }
+    // Project existence check via Prisma is removed. project_alias is used directly.
+    // const project = await prisma.project.findUnique({ where: { alias: project_alias } });
+    // if (!project) {
+    //     return { success: false, message: `Project with alias '${project_alias}' not found.` };
+    // }
 
     let discoveredPages: DiscoveredPageInfo[] = [];
     let discoveryMethodUsed = '';
@@ -204,7 +229,7 @@ export async function discoverDocumentStructure(
     }
 
     if (discoveredPages.length > 0) {
-        await upsertPendingDocuments(project.id, discoveredPages, discoveryMethodUsed);
+        await createDocumentSourcesFromDiscovery(project_alias, discoveredPages, discoveryMethodUsed);
         return { success: true, message: `Successfully discovered ${discoveredPages.length} pages using ${discoveryMethodUsed}.`, discovered_count: discoveredPages.length };
     }
 
@@ -303,14 +328,15 @@ export interface IngestWebDocumentInput {
 export async function ingestWebDocument(
     ctx: ToolCallingContext,
     input: IngestWebDocumentInput
-): Promise<Document | null> {
+): Promise<{ success: boolean; documentSourceId?: string; sourceUrl?: string; message?: string } | null> {
     const { project_alias, url } = input;
 
-    const project = await prisma.project.findUnique({ where: { alias: project_alias } });
-    if (!project) {
-        console.error(`[DocIngestion] Project with alias '${project_alias}' not found.`);
-        return null;
-    }
+    // Prisma project lookup removed. project_alias is used directly.
+    // const project = await prisma.project.findUnique({ where: { alias: project_alias } });
+    // if (!project) {
+    //     console.error(`[DocIngestion] Project with alias '${project_alias}' not found.`);
+    //     return null;
+    // }
 
     console.log(`[DocIngestion] Starting ingestion for URL: ${url} for project ${project_alias}`);
 
@@ -331,32 +357,71 @@ export async function ingestWebDocument(
     const markdownContent = scrapeResult.data.markdown;
     const documentTitle = scrapeResult.data.title || url;
 
-    const contentHash = crypto.createHash('sha256').update(markdownContent).digest('hex');
+    // Content hash can still be useful for DocumentSource metadata if desired, but Weaviate handles its own IDing.
+    // const contentHash = crypto.createHash('sha256').update(markdownContent).digest('hex');
 
-    const existingDocument = await prisma.document.findUnique({
-        where: { content_hash: contentHash },
-    });
-
-    if (existingDocument) {
-        console.log(`[DocIngestion] Document with URL '${url}' and hash '${contentHash}' already exists (ID: ${existingDocument.id}). Skipping.`);
-        return existingDocument;
-    }
+    // TODO: Implement a check if this DocumentSource (URL + project_alias) already exists and has up-to-date content.
+    // This might involve querying Weaviate for the DocumentSource and comparing a content hash or last updated timestamp.
+    // For now, we'll create/update the DocumentSource and its chunks.
 
     try {
-        const newDocument = await prisma.document.create({
-            data: {
-                project_id: project.id,
-                source_url: url,
-                title: documentTitle,
-                markdown_content: markdownContent,
-                content_hash: contentHash,
-            },
-        });
-        console.log(`[DocIngestion] Successfully ingested document '${newDocument.title}' (ID: ${newDocument.id}) from URL '${url}'.`);
-        
-        return newDocument;
+        const documentSourceData = {
+            url: url,
+            title: documentTitle,
+            sourceType: 'web_scrape', // Or derive from context if available
+            projectId: project_alias,
+            lastCrawledAt: new Date(),
+            status: 'INGESTED',
+            // techStack: [], // Placeholder
+            // rawContentHash: contentHash, // Optional: store hash for quick change detection
+        };
+        const sourceResult = await addDocumentSource(documentSourceData);
+        const documentSourceId = sourceResult.id; // Assuming addDocumentSource returns the created object with its ID
+
+        if (!documentSourceId) {
+            console.error(`[DocIngestion] Failed to create or retrieve DocumentSource for URL '${url}'.`);
+            return { success: false, sourceUrl: url, message: 'Failed to create DocumentSource.' };
+        }
+
+        const chunks = chunkMarkdownContent(markdownContent);
+        if (chunks.length === 0) {
+            console.warn(`[DocIngestion] No content chunks generated for URL '${url}'. DocumentSource created but no chunks added.`);
+            return { success: true, documentSourceId, sourceUrl: url, message: 'DocumentSource created, but no content chunks to add.' };
+        }
+
+        let chunkBatcher = getDocumentChunkBatcher();
+        let chunkCount = 0;
+
+        for (const chunk of chunks) {
+            const chunkData = {
+                content: chunk.content,
+                order: chunk.order,
+                sourceUrl: url, // For quick reference, though linked via DocumentSource
+                // fromDocumentSource: [{ beacon: `weaviate://localhost/DocumentSource/${documentSourceId}` }], // Handled by addDocumentChunk
+                // metadataTags: [], // Placeholder
+                // headings: [], // Placeholder, can be extracted during advanced chunking
+            };
+            // addDocumentChunk will handle linking to the sourceId
+            chunkBatcher = chunkBatcher.withObject(await addDocumentChunk(chunkData, documentSourceId, true)); 
+            chunkCount++;
+        }
+
+        if (chunkCount > 0) {
+            const batchResult = await chunkBatcher.do();
+            // console.log('[DocIngestion] Chunk batch import result:', batchResult);
+            // Check batchResult for errors if necessary
+             batchResult.forEach(item => {
+                if (item.result?.errors) {
+                    console.error(`[DocIngestion] Error importing chunk for ${url}:`, item.result.errors);
+                }
+            });
+        }
+
+        console.log(`[DocIngestion] Successfully ingested document '${documentTitle}' (Source ID: ${documentSourceId}) from URL '${url}', ${chunkCount} chunks added.`);
+        return { success: true, documentSourceId, sourceUrl: url, message: `Ingested ${chunkCount} chunks.` };
+
     } catch (error) {
-        console.error(`[DocIngestion] Error saving document from URL '${url}' to database:`, error);
-        return null;
+        console.error(`[DocIngestion] Error saving document and chunks from URL '${url}' to Weaviate:`, error);
+        return { success: false, sourceUrl: url, message: 'Error during Weaviate operation: ' + (error instanceof Error ? error.message : String(error)) };
     }
 }

@@ -5,6 +5,7 @@ import { fileWatcherService } from './services/file-watcher.service.js';
 import { Project } from './generated/prisma/index.js';
 import { createGuide, findGuides, createImplementation, GuideCreateInput, ImplementationCreateInput } from './services/guides.service.js';
 import { ingestWebDocument, IngestWebDocumentInput, ToolCallingContext, discoverDocumentStructure, DiscoverDocumentStructureInput } from './services/document-ingestion.service.js';
+import { initializeSchema } from '../lib/weaviate.service.js';
 
 // Define configuration schema to require a Gemini API key
 export const configSchema = z.object({
@@ -14,6 +15,14 @@ export const configSchema = z.object({
 export default function ({ config }: { config: z.infer<typeof configSchema> }) {
   // Set the API key for the Gemini client
   process.env.GEMINI_API_KEY = config.GEMINI_API_KEY;
+
+  // Initialize Weaviate schema
+  initializeSchema().then(() => {
+    console.log('Weaviate schema initialization process completed.');
+  }).catch(error => {
+    console.error('Failed to initialize Weaviate schema:', error);
+    // Depending on severity, you might want to prevent server startup or handle this error more gracefully.
+  });
 
   const server = new McpServer({
     name: 'Sentient Brain - MCP Server',
