@@ -27,18 +27,12 @@ class GeminiEmbedder(Embedder):
         individual `embed_content` calls.
         """
         try:
-            requests = [
-                {
-                    "content": t,
-                    "taskType": "RETRIEVAL_DOCUMENT",
-                }
-                for t in texts
-            ]
-            response = self.client.models.batch_embed_contents(
+            # The new SDK uses `embed_content`; it accepts either a single string or a list of strings.
+            response = self.client.models.embed_content(
                 model=self.model_name,
-                requests=requests,
+                contents=texts,  # list[str]
             )
-            # Each embedding is returned as a `ContentEmbedding` with a `values` list.
+            # response.embeddings will be a list of ContentEmbedding objects in the same order
             return [emb.values for emb in response.embeddings]
         except Exception as e:
             print(f"Gemini embedding error: {e}")

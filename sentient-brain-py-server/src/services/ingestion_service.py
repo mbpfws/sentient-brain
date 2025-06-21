@@ -79,18 +79,18 @@ class IngestionService:
         vectors = self.embedder.embed(chunks)
         embedding_provider_name = self.embedder.__class__.__name__
 
-        with chunk_collection.data.batch() as batch:
-            for i, chunk_content in enumerate(chunks):
-                data_object = {
-                    "content": chunk_content,
-                    "order": i,
-                    "embedding_provider": embedding_provider_name,
+        # Insert each chunk individually (v4 client no longer supports .batch() on DataCollection)
+        for i, chunk_content in enumerate(chunks):
+            data_object = {
+                "content": chunk_content,
+                "order": i,
+                "embedding_provider": embedding_provider_name,
+            }
+            chunk_collection.data.insert(
+                properties=data_object,
+                vector=vectors[i],
+                references={
+                    "from_source": [source_uuid]
                 }
-                batch.add_object(
-                    properties=data_object,
-                    vector=vectors[i],
-                    references={
-                        "from_source": [source_uuid]
-                    }
-                )
+            )
         print(f"Successfully ingested {len(chunks)} chunks for source {source_uuid}.")
