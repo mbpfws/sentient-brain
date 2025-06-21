@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "weaviate-client": "^3.6.2",
-    "weaviate-ts-client": "^2.2.0"
-  }
-}

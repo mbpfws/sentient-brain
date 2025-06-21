@@ -9,10 +9,9 @@ protobuf
 pydantic-graph
 
 # LLM & AI Services
-google-genai
 sentence-transformers
 litellm
-
+google-genai>=1.6.0
 # Data Storage & Search
 weaviate-client
 neo4j

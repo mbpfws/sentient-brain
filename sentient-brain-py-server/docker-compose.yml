@@ -11,8 +11,7 @@ services:
       - .env
     depends_on:
       - weaviate
-      - ollama
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+
     environment:
       - WEAVIATE_HOST=weaviate
 
@@ -23,18 +22,15 @@ services:
       - "50051:50051"
     volumes:
       - ./weaviate_data:/var/lib/weaviate
+    env_file:
+      - .env
     environment:
       QUERY_DEFAULTS_LIMIT: 25
       AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
-      DEFAULT_VECTORIZER_MODULE: 'text2vec-ollama'
-      ENABLE_MODULES: 'text2vec-ollama,generative-ollama'
-      OLLAMA_API_URL: 'http://ollama:11434'
+      DEFAULT_VECTORIZER_MODULE: 'text2vec-transformers'
+      ENABLE_MODULES: 'text2vec-transformers'
+      TRANSFORMERS_INFERENCE_API: 'http://localhost:8080'
       PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
       CLUSTER_HOSTNAME: 'node1'
 
-  ollama:
-    image: ollama/ollama
-    ports:
-      - "11434:11434"
-    volumes:
-      - ./ollama_data:/root/.ollama
+
