@@ -5,6 +5,7 @@ from ..models.graph_models import CodeNode, CodeRelationship, NodeType, Relation
 from ..db.neo4j_driver import get_neo4j_session
 from ..db.weaviate_client import get_weaviate_client
 from ..embedding.embedder import get_embedder
+from ..parsers.registry import get_parser_registry
 
 class CodeGraphVisitor(ast.NodeVisitor):
     """An AST visitor that builds a graph of nodes and relationships."""
@@ -129,14 +130,13 @@ class CodeGraphService:
         self, file_path: str, source_code: str
     ) -> Tuple[List[CodeNode], List[CodeRelationship]]:
         """Parses Python source code into a list of nodes and relationships."""
-        try:
-            tree = ast.parse(source_code)
-            visitor = CodeGraphVisitor(file_path, source_code)
-            visitor.visit(tree)
-            return list(visitor.nodes.values()), visitor.relationships
-        except SyntaxError as e:
-            print(f"Error parsing {file_path}: {e}")
+        # Decide which parser to use based on file extension
+        ext = os.path.splitext(file_path)[1]
+        parser = get_parser_registry().get_parser_for_ext(ext)
+        if not parser:
+            print(f"No parser registered for extension {ext}, skipping {file_path}")
             return [], []
+        return parser.parse(file_path, source_code)
 
     def persist_graph(self, nodes: List[CodeNode], relationships: List[CodeRelationship]):
         """Persists the graph nodes and relationships to Neo4j."""
