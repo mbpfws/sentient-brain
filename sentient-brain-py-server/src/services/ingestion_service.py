@@ -33,6 +33,7 @@ class IngestionService:
         if not self.client.collections.exists(source_collection_name):
             self.client.collections.create(
                 name=source_collection_name,
+                vectorizer_config=Configure.Vectorizer.none(),  # no automatic embeddings; we manage vectors manually where needed
                 properties=[
                     wvc.Property(name="title", data_type=wvc.DataType.TEXT),
                     wvc.Property(name="document_type", data_type=wvc.DataType.TEXT),

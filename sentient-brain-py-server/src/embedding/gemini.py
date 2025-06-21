@@ -5,20 +5,41 @@ from .embedder import Embedder
 class GeminiEmbedder(Embedder):
     """Embedding provider using Google's Gemini models."""
 
-    def __init__(self, model_name: str = "models/embedding-001"):
+    def __init__(self, model_name: str = "text-embedding-004"):
+        """Initialize the Gemini client and select an embedding model.
+
+        Google renamed the public embedding model to `text-embedding-004` in 2024.
+        A dedicated client object is now required instead of the deprecated
+        `genai.configure()` global setter.
+        """
         self.model_name = model_name
         api_key = os.getenv("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY environment variable not set.")
-        genai.configure(api_key=api_key)
+        # New pattern (>= v1.20): instantiate a client per API key.
+        self.client = genai.Client(api_key=api_key)
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        """Generates embeddings for a list of texts."""
+        """Generate embeddings for a batch of texts.
+
+        Uses the `batch_embed_contents` endpoint (introduced mid-2024) which
+        accepts up to 96 documents per call and is more cost-efficient than
+        individual `embed_content` calls.
+        """
         try:
-            # Note: The 'task_type' is recommended for future models and specific use cases.
-            result = genai.embed_content(model=self.model_name, content=texts, task_type="RETRIEVAL_DOCUMENT")
-            return result['embedding']
+            requests = [
+                {
+                    "content": t,
+                    "taskType": "RETRIEVAL_DOCUMENT",
+                }
+                for t in texts
+            ]
+            response = self.client.models.batch_embed_contents(
+                model=self.model_name,
+                requests=requests,
+            )
+            # Each embedding is returned as a `ContentEmbedding` with a `values` list.
+            return [emb.values for emb in response.embeddings]
         except Exception as e:
-            print(f"An error occurred with the Gemini API: {e}")
-            # Return a list of empty lists to match the expected output structure on failure
+            print(f"Gemini embedding error: {e}")
             return [[] for _ in texts]

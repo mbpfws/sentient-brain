@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from uuid import uuid4
 from typing import List, Dict, Any, Optional
 from datetime import datetime
 from enum import Enum
@@ -8,6 +9,7 @@ class DocumentType(str, Enum):
     SOURCE_CODE = "SOURCE_CODE"
     NOTE = "NOTE"
     WEB_PAGE = "WEB_PAGE"
+    DOCUMENTATION = "DOCUMENTATION"
 
 class IngestionStatus(str, Enum):
     PENDING = "PENDING"
@@ -16,8 +18,9 @@ class IngestionStatus(str, Enum):
     FAILED = "FAILED"
 
 class DocumentSource(BaseModel):
-    id: str = Field(..., description="Unique identifier, e.g., a URL or file path")
+    id: str = Field(default_factory=lambda: str(uuid4()), description="Unique identifier")
     title: Optional[str] = None
+    uri: Optional[str] = None
     document_type: DocumentType
     tech_stack: List[str] = []
     last_crawled_at: datetime = Field(default_factory=datetime.utcnow)
