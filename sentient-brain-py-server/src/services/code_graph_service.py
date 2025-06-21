@@ -2,7 +2,7 @@ import ast
 from typing import List, Tuple, Dict, Any
 
 from ..models.graph_models import CodeNode, CodeRelationship, NodeType, RelationshipType
-from ..core.db.neo4j_driver import get_neo4j_session
+from ..db.neo4j_driver import get_neo4j_session
 
 class CodeGraphVisitor(ast.NodeVisitor):
     """An AST visitor that builds a graph of nodes and relationships."""

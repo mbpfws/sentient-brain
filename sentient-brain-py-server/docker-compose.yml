@@ -12,10 +12,10 @@ services:
     depends_on:
       - weaviate
       - ollama
-    command: uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8000
 
   weaviate:
-    image: cr.weaviate.io/semitechnologies/weaviate:1.25.1
+    image: cr.weaviate.io/semitechnologies/weaviate:1.31.1
     ports:
       - "8080:8080"
       - "50051:50051"
