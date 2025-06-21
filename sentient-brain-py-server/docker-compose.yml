@@ -13,6 +13,8 @@ services:
       - weaviate
       - ollama
     command: uvicorn src.main:app --host 0.0.0.0 --port 8000
+    environment:
+      - WEAVIATE_HOST=weaviate
 
   weaviate:
     image: cr.weaviate.io/semitechnologies/weaviate:1.31.1
