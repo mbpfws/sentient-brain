@@ -1,1 +1,33 @@
-runtime: typescript
+runtime: "container"
+startCommand:
+  type: "http"
+  configSchema:
+    type: "object"
+    properties:
+      GEMINI_API_KEY:
+        type: "string"
+        description: "Google Gemini API Key"
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
+  esbuild:
+    external:
+      - crawlee
+      - "@crawlee/puppeteer"
+      - "@crawlee/playwright"
+      - "@crawlee/cheerio"
+      - "@crawlee/jsdom"
+      - playwright-core
+      - puppeteer-core
+      - puppeteer
+      - playwright
+      - jsdom
+      - jquery
+      - cheerio
+      - sharp
+      - "@grpc/grpc-js"
+    target: "node18"
+    platform: "node"
+env:
+  NODE_ENV: "development"
+  SMITHERY_API_KEY: "534e8079-e1f8-4e4f-a478-0d4c5063529e"

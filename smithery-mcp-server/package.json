@@ -13,18 +13,21 @@
 	"license": "ISC",
 	"dependencies": {
 		"@google/genai": "^1.5.1",
-		"@modelcontextprotocol/sdk": "^1.12.1",
-		"@prisma/client": "^6.10.1",
+		"@modelcontextprotocol/sdk": "^1.13.0",
 		"chokidar": "^4.0.3",
-		"crawlee": "^3.10.2",
-		"playwright": "^1.45.3",
+		"crawlee": "^3.13.8",
+		"cheerio": "^1.0.0-rc.12",
+		"jsdom": "^24.1.1",
+		"jquery": "^3.7.1",
+		"playwright": "^1.53.1",
+		"puppeteer": "^24.10.2",
 		"weaviate-ts-client": "^2.2.0",
 		"zod": "^3.25.46"
 	},
 	"devDependencies": {
-		"@smithery/cli": "^1.2.4",
+		"@smithery/cli": "^1.2.11",
 		"@types/node": "^24.0.3",
-		"prisma": "^6.10.1",
-		"tsx": "^4.19.4"
+		"tsx": "^4.19.4",
+		"typescript": "^5.8.3"
 	}
 }

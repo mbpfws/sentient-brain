@@ -1,0 +1,41 @@
+# Main Application Framework
+fastapi
+uvicorn[standard]
+
+# Communication & Agentics
+grpcio
+grpcio-tools
+protobuf
+pydantic-graph
+
+# LLM & AI Services
+google-genai
+sentence-transformers
+litellm
+
+# Data Storage & Search
+weaviate-client
+neo4j
+rank-bm25
+
+# Data Handling & Validation
+pydantic
+pydantic-settings
+
+# LangChain Utilities (for specific tasks like text splitting)
+langchain-community
+langchain-core
+langchain-text-splitters
+
+# Web/File Ingestion & Parsing
+playwright
+tf-playwright-stealth
+beautifulsoup4
+html2text
+
+# Utilities & Resilience
+tenacity
+typer
+rich
+tqdm
+python-dotenv
