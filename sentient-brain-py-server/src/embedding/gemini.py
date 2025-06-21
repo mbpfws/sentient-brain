@@ -5,10 +5,10 @@ from .embedder import Embedder
 class GeminiEmbedder(Embedder):
     """Embedding provider using Google's Gemini models."""
 
-    def __init__(self, model_name: str = "text-embedding-004"):
+    def __init__(self, model_name: str = "gemini-embedding-exp-03-07"):
         """Initialize the Gemini client and select an embedding model.
 
-        Google renamed the public embedding model to `text-embedding-004` in 2024.
+        Google's latest experimental embedding model `gemini-embedding-exp-03-07` (8 k-token context) offers larger context windows and improved quality over `text-embedding-004`. The default can be overridden by passing `model_name`.
         A dedicated client object is now required instead of the deprecated
         `genai.configure()` global setter.
         """
