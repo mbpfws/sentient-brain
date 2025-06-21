@@ -1,8 +1,10 @@
+import os
 from fastapi import FastAPI, Depends
 from contextlib import asynccontextmanager
 
 from .services.ingestion_service import IngestionService
 from .services.code_graph_service import CodeGraphService
+from .services.file_watcher import FileWatcherService
 from .db.neo4j_driver import get_neo4j_driver, close_neo4j_driver
 from .models.document_models import DocumentSource, DocumentType, IngestionStatus
 
@@ -23,6 +25,14 @@ async def lifespan(app: FastAPI):
         # Initialize Neo4j and services that depend on it
         get_neo4j_driver() # Establishes and verifies the connection
         app.state.code_graph_service = CodeGraphService()
+
+        # Initialize and start the file watcher
+        watch_paths = os.getenv("WATCH_PATHS", "src").split(',')
+        app.state.file_watcher = FileWatcherService(
+            paths_to_watch=watch_paths,
+            code_graph_service=app.state.code_graph_service
+        )
+        app.state.file_watcher.start()
         print("CodeGraphService initialized.", flush=True)
 
     except Exception as e:
@@ -31,6 +41,8 @@ async def lifespan(app: FastAPI):
     yield
     
     # On shutdown
+    if hasattr(app.state, 'file_watcher') and app.state.file_watcher:
+        app.state.file_watcher.stop()
     close_neo4j_driver()
     print("Application shutdown.", flush=True)
 

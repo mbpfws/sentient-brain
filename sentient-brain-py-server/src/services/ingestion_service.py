@@ -19,6 +19,7 @@ class IngestionService:
         # Configuration for collections
         source_collection_name = "DocumentSource"
         chunk_collection_name = "DocumentChunk"
+        code_chunk_collection_name = "CodeChunk"
 
         # Delete collections if recreation is requested
         if recreate:
@@ -28,6 +29,9 @@ class IngestionService:
             if self.client.collections.exists(chunk_collection_name):
                 self.client.collections.delete(chunk_collection_name)
                 print(f"Deleted existing collection: {chunk_collection_name}")
+            if self.client.collections.exists(code_chunk_collection_name):
+                self.client.collections.delete(code_chunk_collection_name)
+                print(f"Deleted existing collection: {code_chunk_collection_name}")
 
         # Create DocumentSource collection if it doesn't exist
         if not self.client.collections.exists(source_collection_name):
@@ -42,6 +46,22 @@ class IngestionService:
                 ]
             )
             print(f"Created collection: {source_collection_name}")
+
+        # Create CodeChunk collection for vectorized code snippets
+        if not self.client.collections.exists(code_chunk_collection_name):
+            self.client.collections.create(
+                name=code_chunk_collection_name,
+                vectorizer_config=Configure.Vectorizer.none(),
+                properties=[
+                    wvc.Property(name="file_path", data_type=wvc.DataType.TEXT),
+                    wvc.Property(name="node_type", data_type=wvc.DataType.TEXT),
+                    wvc.Property(name="name", data_type=wvc.DataType.TEXT),
+                    wvc.Property(name="start_line", data_type=wvc.DataType.INT),
+                    wvc.Property(name="end_line", data_type=wvc.DataType.INT),
+                    wvc.Property(name="content", data_type=wvc.DataType.TEXT),
+                ]
+            )
+            print(f"Created collection: {code_chunk_collection_name}")
 
         # Create DocumentChunk collection if it doesn't exist
         if not self.client.collections.exists(chunk_collection_name):

@@ -3,6 +3,8 @@ from typing import List, Tuple, Dict, Any
 
 from ..models.graph_models import CodeNode, CodeRelationship, NodeType, RelationshipType
 from ..db.neo4j_driver import get_neo4j_session
+from ..db.weaviate_client import get_weaviate_client
+from ..embedding.embedder import get_embedder
 
 class CodeGraphVisitor(ast.NodeVisitor):
     """An AST visitor that builds a graph of nodes and relationships."""
@@ -116,7 +118,12 @@ class CodeGraphVisitor(ast.NodeVisitor):
         self.generic_visit(node)
 
 class CodeGraphService:
-    """Service to parse source code and build a knowledge graph."""
+    """Service to parse source code, build a knowledge graph, and sync to Weaviate."""
+
+    def __init__(self):
+        self.weaviate_client = get_weaviate_client()
+        self.embedder = get_embedder()
+        print("CodeGraphService initialized with Weaviate and Embedder clients.")
 
     def parse_code_to_graph(
         self, file_path: str, source_code: str
@@ -154,8 +161,53 @@ class CodeGraphService:
                 )
         print(f"Persisted {len(nodes)} nodes and {len(relationships)} relationships.")
 
+    def sync_code_chunks_to_weaviate(self, file_path: str, source_code: str, nodes: List[CodeNode]):
+        """Extracts code content, generates embeddings, and upserts to Weaviate."""
+        code_chunk_collection = self.weaviate_client.collections.get("CodeChunk")
+        source_lines = source_code.splitlines()
+
+        nodes_to_embed = [
+            n for n in nodes 
+            if n.node_type in [NodeType.CLASS, NodeType.FUNCTION, NodeType.METHOD]
+        ]
+
+        if not nodes_to_embed:
+            return
+
+        # Prepare content for batch embedding
+        contents_to_embed = []
+        for node in nodes_to_embed:
+            # Ensure start and end lines are within bounds
+            start = max(0, node.start_line - 1)
+            end = min(len(source_lines), node.end_line)
+            content = "\n".join(source_lines[start:end])
+            contents_to_embed.append(content)
+
+        # Get embeddings
+        vectors = self.embedder.embed(contents_to_embed)
+
+        # Prepare objects for Weaviate batch import
+        with code_chunk_collection.data.batch() as batch:
+            for i, node in enumerate(nodes_to_embed):
+                data_object = {
+                    "file_path": file_path,
+                    "node_type": node.node_type.value,
+                    "name": node.name,
+                    "start_line": node.start_line,
+                    "end_line": node.end_line,
+                    "content": contents_to_embed[i],
+                }
+                batch.add_object(
+                    properties=data_object,
+                    vector=vectors[i],
+                    uuid=node.id  # Use the same ID as Neo4j for consistency
+                )
+        
+        print(f"Synced {len(nodes_to_embed)} code chunks to Weaviate for file {file_path}.")
+
     def process_file(self, file_path: str, source_code: str):
         """A convenience method to parse a file and persist its graph."""
         nodes, relationships = self.parse_code_to_graph(file_path, source_code)
         if nodes or relationships:
             self.persist_graph(nodes, relationships)
+            self.sync_code_chunks_to_weaviate(file_path, source_code, nodes)
