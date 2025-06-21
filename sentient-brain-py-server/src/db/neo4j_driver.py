@@ -37,7 +37,7 @@ neo4j_driver = Neo4jDriver()
 
 def get_neo4j_driver() -> Driver:
     return neo4j_driver.get_driver()
-
+# This is just a test
 def close_neo4j_driver():
     neo4j_driver.close()
 

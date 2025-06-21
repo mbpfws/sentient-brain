@@ -186,28 +186,35 @@ class CodeGraphService:
         # Get embeddings
         vectors = self.embedder.embed(contents_to_embed)
 
-        # Prepare objects for Weaviate batch import
-        with code_chunk_collection.data.batch() as batch:
-            for i, node in enumerate(nodes_to_embed):
-                data_object = {
-                    "file_path": file_path,
-                    "node_type": node.node_type.value,
-                    "name": node.name,
-                    "start_line": node.start_line,
-                    "end_line": node.end_line,
-                    "content": contents_to_embed[i],
-                }
-                batch.add_object(
-                    properties=data_object,
-                    vector=vectors[i],
-                    uuid=node.id  # Use the same ID as Neo4j for consistency
-                )
+        # Insert each code chunk individually (v4 client does not support .batch())
+        for i, node in enumerate(nodes_to_embed):
+            data_object = {
+                "file_path": file_path,
+                "node_type": node.node_type.value,
+                "name": node.name,
+                "start_line": node.start_line,
+                "end_line": node.end_line,
+                "content": contents_to_embed[i],
+            }
+            code_chunk_collection.data.insert(
+                properties=data_object,
+                vector=vectors[i],
+                uuid=node.id  # Use the same ID as Neo4j for consistency
+            )
         
         print(f"Synced {len(nodes_to_embed)} code chunks to Weaviate for file {file_path}.")
 
     def process_file(self, file_path: str, source_code: str):
-        """A convenience method to parse a file and persist its graph."""
+        """Parses a file, persists its graph, and logs a summary."""
         nodes, relationships = self.parse_code_to_graph(file_path, source_code)
-        if nodes or relationships:
-            self.persist_graph(nodes, relationships)
-            self.sync_code_chunks_to_weaviate(file_path, source_code, nodes)
+        if not nodes and not relationships:
+            return
+
+        # Persist to Neo4j and Weaviate
+        self.persist_graph(nodes, relationships)
+        self.sync_code_chunks_to_weaviate(file_path, source_code, nodes)
+
+        # Summary log
+        class_count = sum(1 for n in nodes if n.node_type == NodeType.CLASS)
+        func_count = sum(1 for n in nodes if n.node_type in [NodeType.FUNCTION, NodeType.METHOD])
+        print(f"Indexed {class_count} classes, {func_count} functions from {file_path}.")

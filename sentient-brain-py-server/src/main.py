@@ -11,7 +11,7 @@ from .models.document_models import DocumentSource, DocumentType, IngestionStatu
 # Dependency to get the ingestion service
 def get_ingestion_service():
     return IngestionService()
-
+    # On startup
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # On startup
