@@ -2,7 +2,7 @@ import os
 from neo4j import GraphDatabase, Driver
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load environment variables from .env file (make sure it's in the root directory)
 load_dotenv()
 
 class Neo4jDriver:
