@@ -238,3 +238,72 @@ class CodeGraphService:
         class_count = sum(1 for n in nodes if n.node_type == NodeType.CLASS)
         func_count = sum(1 for n in nodes if n.node_type in [NodeType.FUNCTION, NodeType.METHOD])
         print(f"Indexed {class_count} classes, {func_count} functions from {file_path}.")
+
+    # ---------------------
+    # Back-population util
+    # ---------------------
+
+    def backpopulate_missing_chunks(self):
+        """Scan Neo4j for code nodes missing in Weaviate and insert them."""
+        print("[BACKPOP] Starting back-population check…", flush=True)
+        client = get_weaviate_client()
+        chunk_coll = client.collections.get("CodeChunk")
+
+        # 1. Fetch all existing source_ids from Weaviate
+        existing_source_ids: set[str] = set()
+        try:
+            objs = chunk_coll.query.fetch_objects(limit=100000)  # all
+            for ob in objs.objects:  # type: ignore
+                existing_source_ids.add(ob.properties.get("source_id"))
+        except Exception as exc:
+            print(f"[BACKPOP] Error fetching existing chunks: {exc}", flush=True)
+
+        # 2. Query Neo4j for candidate nodes
+        with get_neo4j_session() as session:
+            records = session.run(
+                """
+                MATCH (n)
+                WHERE n.node_type IN ['CLASS','FUNCTION','METHOD']
+                RETURN n.id   AS id,
+                       n.name AS name,
+                       n.node_type AS node_type,
+                       n.start_line AS start_line,
+                       n.end_line   AS end_line,
+                       n.file_path  AS file_path
+                """
+            )
+            missing = []
+            for rec in records:
+                sid = rec["id"]
+                if sid not in existing_source_ids:
+                    missing.append(rec)
+
+            print(f"[BACKPOP] {len(missing)} missing chunks to backfill.", flush=True)
+
+            for rec in missing:
+                file_path = rec["file_path"]
+                try:
+                    with open(file_path, "r", encoding="utf-8") as f:
+                        lines = f.read().splitlines()
+                    start = max(0, (rec["start_line"] or 1)-1)
+                    end = min(len(lines), rec["end_line"] or start+1)
+                    content = "\n".join(lines[start:end])
+                    vector = self.embedder.embed([content])[0]
+                    chunk_uuid = str(uuid.uuid4())
+                    chunk_coll.data.insert(
+                        properties={
+                            "source_id": sid,
+                            "file_path": file_path,
+                            "node_type": rec["node_type"],
+                            "name": rec["name"],
+                            "start_line": rec["start_line"],
+                            "end_line": rec["end_line"],
+                            "content": content,
+                        },
+                        vector=vector,
+                        uuid=chunk_uuid,
+                    )
+                    print(f"[BACKPOP] Inserted missing chunk {sid} → {chunk_uuid}", flush=True)
+                except Exception as exc:
+                    print(f"[BACKPOP] Failed to backfill {sid}: {exc}", flush=True)
+        print("[BACKPOP] Completed.", flush=True)
