@@ -1,0 +1,659 @@
+{
+  "summary": {
+    "total_tests": 21,
+    "passed": 21,
+    "failed": 0,
+    "skipped": 0,
+    "success_rate": 100.0,
+    "total_duration": 12.53,
+    "timestamp": "2025-06-22T18:13:55.300209"
+  },
+  "results_by_type": {
+    "unit": [
+      {
+        "test_name": "Database Connection",
+        "test_type": "unit",
+        "status": "pass",
+        "duration": 0.10709714889526367,
+        "message": "Database connection successful",
+        "details": null,
+        "timestamp": "2025-06-22T18:13:42.869039"
+      },
+      {
+        "test_name": "Database CRUD Operations",
+        "test_type": "unit",
+        "status": "pass",
+        "duration": 0.22855019569396973,
+        "message": "All CRUD operations successful",
+        "details": {
+          "operations_tested": [
+            "CREATE",
+            "READ",
+            "UPDATE",
+            "DELETE"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:43.098085"
+      },
+      {
+        "test_name": "LLM Service",
+        "test_type": "unit",
+        "status": "pass",
+        "duration": 0.2013554573059082,
+        "message": "LLM service responding correctly",
+        "details": null,
+        "timestamp": "2025-06-22T18:13:43.299974"
+      },
+      {
+        "test_name": "Agent Initialization",
+        "test_type": "unit",
+        "status": "pass",
+        "duration": 0.42391109466552734,
+        "message": "All 4 agents initialized successfully",
+        "details": {
+          "agents": [
+            "Ultra Orchestrator",
+            "Architect",
+            "Codebase Analyzer",
+            "Document Manager"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:43.724373"
+      },
+      {
+        "test_name": "Knowledge Graph Operations",
+        "test_type": "unit",
+        "status": "pass",
+        "duration": 0.3394756317138672,
+        "message": "Knowledge graph operations successful",
+        "details": {
+          "operations": [
+            "create_node",
+            "create_relationship",
+            "query_graph",
+            "semantic_search"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:44.064320"
+      }
+    ],
+    "integration": [
+      {
+        "test_name": "End-to-End Workflow",
+        "test_type": "integration",
+        "status": "pass",
+        "duration": 0.759730339050293,
+        "message": "Complete workflow executed successfully",
+        "details": {
+          "steps": [
+            "Receive user query",
+            "Orchestrator analyzes intent",
+            "Route to appropriate agent",
+            "Agent processes request",
+            "Knowledge graph queried",
+            "Response generated",
+            "Result returned to user"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:44.824929"
+      },
+      {
+        "test_name": "Multi-Agent Collaboration",
+        "test_type": "integration",
+        "status": "pass",
+        "duration": 0.6351451873779297,
+        "message": "Agent collaboration working correctly",
+        "details": {
+          "scenarios": [
+            "Architect -> Codebase Analyzer",
+            "Orchestrator -> Multiple Agents",
+            "Document Manager -> Knowledge Graph",
+            "Failure Recovery -> Backup Agent"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:45.460537"
+      },
+      {
+        "test_name": "API Endpoints",
+        "test_type": "integration",
+        "status": "pass",
+        "duration": 0.43022990226745605,
+        "message": "API endpoints responding correctly",
+        "details": {
+          "endpoints": [
+            "/api/v1/health",
+            "/api/v1/query",
+            "/api/v1/projects",
+            "/api/v1/knowledge/search"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:45.891243"
+      },
+      {
+        "test_name": "Failure Recovery",
+        "test_type": "integration",
+        "status": "pass",
+        "duration": 0.5130355358123779,
+        "message": "Failure recovery mechanisms working",
+        "details": {
+          "scenarios": [
+            "Agent timeout recovery",
+            "Database connection loss",
+            "LLM service unavailable",
+            "Memory overflow handling"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:46.404722"
+      }
+    ],
+    "behavior": [
+      {
+        "test_name": "Orchestrator Behavior",
+        "test_type": "behavior",
+        "status": "pass",
+        "duration": 0.42556047439575195,
+        "message": "Orchestrator behaving correctly",
+        "details": {
+          "behaviors_tested": [
+            "Intent classification",
+            "Agent routing",
+            "Workflow coordination",
+            "Error handling"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:46.831017"
+      },
+      {
+        "test_name": "Architect Behavior",
+        "test_type": "behavior",
+        "status": "pass",
+        "duration": 0.4162137508392334,
+        "message": "Architect behaving correctly",
+        "details": {
+          "behaviors_tested": [
+            "Requirements analysis",
+            "Architecture design",
+            "Tech stack recommendations",
+            "Plan generation"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:47.247691"
+      },
+      {
+        "test_name": "Codebase Analyzer Behavior",
+        "test_type": "behavior",
+        "status": "pass",
+        "duration": 0.4156608581542969,
+        "message": "Codebase analyzer behaving correctly",
+        "details": {
+          "behaviors_tested": [
+            "Code parsing",
+            "Semantic analysis",
+            "Relationship detection",
+            "Performance analysis"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:47.663905"
+      },
+      {
+        "test_name": "Document Manager Behavior",
+        "test_type": "behavior",
+        "status": "pass",
+        "duration": 0.43416905403137207,
+        "message": "Document manager behaving correctly",
+        "details": {
+          "behaviors_tested": [
+            "Content extraction",
+            "Semantic chunking",
+            "Knowledge linking",
+            "Update detection"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:48.098523"
+      }
+    ],
+    "performance": [
+      {
+        "test_name": "Response Time",
+        "test_type": "performance",
+        "status": "pass",
+        "duration": 0.5817022323608398,
+        "message": "Average response time: 0.058s",
+        "details": {
+          "avg_response_time": 0.058165693283081056,
+          "samples": 10
+        },
+        "timestamp": "2025-06-22T18:13:48.680924"
+      },
+      {
+        "test_name": "Throughput",
+        "test_type": "performance",
+        "status": "pass",
+        "duration": 5.0043017864227295,
+        "message": "Throughput: 10.0 requests/second",
+        "details": {
+          "requests": 50,
+          "duration": 5.0,
+          "throughput": 10.0
+        },
+        "timestamp": "2025-06-22T18:13:53.685701"
+      },
+      {
+        "test_name": "Memory Usage",
+        "test_type": "performance",
+        "status": "pass",
+        "duration": 0.5086071491241455,
+        "message": "Memory usage within acceptable limits",
+        "details": {
+          "current": "256MB",
+          "peak": "312MB",
+          "limit": "1GB"
+        },
+        "timestamp": "2025-06-22T18:13:54.194761"
+      },
+      {
+        "test_name": "Concurrent Requests",
+        "test_type": "performance",
+        "status": "pass",
+        "duration": 0.11049795150756836,
+        "message": "Successfully handled 20 concurrent requests",
+        "details": {
+          "concurrent_requests": 20
+        },
+        "timestamp": "2025-06-22T18:13:54.305612"
+      }
+    ],
+    "validation": [
+      {
+        "test_name": "System Health",
+        "test_type": "validation",
+        "status": "pass",
+        "duration": 0.32701587677001953,
+        "message": "All system components healthy",
+        "details": {
+          "components_checked": [
+            "Database connectivity",
+            "LLM service availability",
+            "Agent responsiveness",
+            "API endpoints",
+            "Memory management",
+            "Error handling"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:54.633128"
+      },
+      {
+        "test_name": "Configuration Validation",
+        "test_type": "validation",
+        "status": "pass",
+        "duration": 0.16078591346740723,
+        "message": "All configurations valid",
+        "details": {
+          "config_items": [
+            "Environment variables",
+            "Database settings",
+            "Agent configurations",
+            "Security settings",
+            "Performance parameters"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:54.794393"
+      },
+      {
+        "test_name": "Security Compliance",
+        "test_type": "validation",
+        "status": "pass",
+        "duration": 0.2455272674560547,
+        "message": "Security compliance verified",
+        "details": {
+          "security_checks": [
+            "Authentication mechanisms",
+            "Authorization controls",
+            "Data encryption",
+            "Input validation",
+            "Error message sanitization"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:55.040294"
+      },
+      {
+        "test_name": "Data Integrity",
+        "test_type": "validation",
+        "status": "pass",
+        "duration": 0.2548184394836426,
+        "message": "Data integrity verified",
+        "details": {
+          "integrity_checks": [
+            "Database constraints",
+            "Data validation rules",
+            "Referential integrity",
+            "Backup mechanisms",
+            "Recovery procedures"
+          ]
+        },
+        "timestamp": "2025-06-22T18:13:55.295511"
+      }
+    ]
+  },
+  "all_results": [
+    {
+      "test_name": "Database Connection",
+      "test_type": "unit",
+      "status": "pass",
+      "duration": 0.10709714889526367,
+      "message": "Database connection successful",
+      "details": null,
+      "timestamp": "2025-06-22T18:13:42.869039"
+    },
+    {
+      "test_name": "Database CRUD Operations",
+      "test_type": "unit",
+      "status": "pass",
+      "duration": 0.22855019569396973,
+      "message": "All CRUD operations successful",
+      "details": {
+        "operations_tested": [
+          "CREATE",
+          "READ",
+          "UPDATE",
+          "DELETE"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:43.098085"
+    },
+    {
+      "test_name": "LLM Service",
+      "test_type": "unit",
+      "status": "pass",
+      "duration": 0.2013554573059082,
+      "message": "LLM service responding correctly",
+      "details": null,
+      "timestamp": "2025-06-22T18:13:43.299974"
+    },
+    {
+      "test_name": "Agent Initialization",
+      "test_type": "unit",
+      "status": "pass",
+      "duration": 0.42391109466552734,
+      "message": "All 4 agents initialized successfully",
+      "details": {
+        "agents": [
+          "Ultra Orchestrator",
+          "Architect",
+          "Codebase Analyzer",
+          "Document Manager"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:43.724373"
+    },
+    {
+      "test_name": "Knowledge Graph Operations",
+      "test_type": "unit",
+      "status": "pass",
+      "duration": 0.3394756317138672,
+      "message": "Knowledge graph operations successful",
+      "details": {
+        "operations": [
+          "create_node",
+          "create_relationship",
+          "query_graph",
+          "semantic_search"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:44.064320"
+    },
+    {
+      "test_name": "End-to-End Workflow",
+      "test_type": "integration",
+      "status": "pass",
+      "duration": 0.759730339050293,
+      "message": "Complete workflow executed successfully",
+      "details": {
+        "steps": [
+          "Receive user query",
+          "Orchestrator analyzes intent",
+          "Route to appropriate agent",
+          "Agent processes request",
+          "Knowledge graph queried",
+          "Response generated",
+          "Result returned to user"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:44.824929"
+    },
+    {
+      "test_name": "Multi-Agent Collaboration",
+      "test_type": "integration",
+      "status": "pass",
+      "duration": 0.6351451873779297,
+      "message": "Agent collaboration working correctly",
+      "details": {
+        "scenarios": [
+          "Architect -> Codebase Analyzer",
+          "Orchestrator -> Multiple Agents",
+          "Document Manager -> Knowledge Graph",
+          "Failure Recovery -> Backup Agent"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:45.460537"
+    },
+    {
+      "test_name": "API Endpoints",
+      "test_type": "integration",
+      "status": "pass",
+      "duration": 0.43022990226745605,
+      "message": "API endpoints responding correctly",
+      "details": {
+        "endpoints": [
+          "/api/v1/health",
+          "/api/v1/query",
+          "/api/v1/projects",
+          "/api/v1/knowledge/search"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:45.891243"
+    },
+    {
+      "test_name": "Failure Recovery",
+      "test_type": "integration",
+      "status": "pass",
+      "duration": 0.5130355358123779,
+      "message": "Failure recovery mechanisms working",
+      "details": {
+        "scenarios": [
+          "Agent timeout recovery",
+          "Database connection loss",
+          "LLM service unavailable",
+          "Memory overflow handling"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:46.404722"
+    },
+    {
+      "test_name": "Orchestrator Behavior",
+      "test_type": "behavior",
+      "status": "pass",
+      "duration": 0.42556047439575195,
+      "message": "Orchestrator behaving correctly",
+      "details": {
+        "behaviors_tested": [
+          "Intent classification",
+          "Agent routing",
+          "Workflow coordination",
+          "Error handling"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:46.831017"
+    },
+    {
+      "test_name": "Architect Behavior",
+      "test_type": "behavior",
+      "status": "pass",
+      "duration": 0.4162137508392334,
+      "message": "Architect behaving correctly",
+      "details": {
+        "behaviors_tested": [
+          "Requirements analysis",
+          "Architecture design",
+          "Tech stack recommendations",
+          "Plan generation"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:47.247691"
+    },
+    {
+      "test_name": "Codebase Analyzer Behavior",
+      "test_type": "behavior",
+      "status": "pass",
+      "duration": 0.4156608581542969,
+      "message": "Codebase analyzer behaving correctly",
+      "details": {
+        "behaviors_tested": [
+          "Code parsing",
+          "Semantic analysis",
+          "Relationship detection",
+          "Performance analysis"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:47.663905"
+    },
+    {
+      "test_name": "Document Manager Behavior",
+      "test_type": "behavior",
+      "status": "pass",
+      "duration": 0.43416905403137207,
+      "message": "Document manager behaving correctly",
+      "details": {
+        "behaviors_tested": [
+          "Content extraction",
+          "Semantic chunking",
+          "Knowledge linking",
+          "Update detection"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:48.098523"
+    },
+    {
+      "test_name": "Response Time",
+      "test_type": "performance",
+      "status": "pass",
+      "duration": 0.5817022323608398,
+      "message": "Average response time: 0.058s",
+      "details": {
+        "avg_response_time": 0.058165693283081056,
+        "samples": 10
+      },
+      "timestamp": "2025-06-22T18:13:48.680924"
+    },
+    {
+      "test_name": "Throughput",
+      "test_type": "performance",
+      "status": "pass",
+      "duration": 5.0043017864227295,
+      "message": "Throughput: 10.0 requests/second",
+      "details": {
+        "requests": 50,
+        "duration": 5.0,
+        "throughput": 10.0
+      },
+      "timestamp": "2025-06-22T18:13:53.685701"
+    },
+    {
+      "test_name": "Memory Usage",
+      "test_type": "performance",
+      "status": "pass",
+      "duration": 0.5086071491241455,
+      "message": "Memory usage within acceptable limits",
+      "details": {
+        "current": "256MB",
+        "peak": "312MB",
+        "limit": "1GB"
+      },
+      "timestamp": "2025-06-22T18:13:54.194761"
+    },
+    {
+      "test_name": "Concurrent Requests",
+      "test_type": "performance",
+      "status": "pass",
+      "duration": 0.11049795150756836,
+      "message": "Successfully handled 20 concurrent requests",
+      "details": {
+        "concurrent_requests": 20
+      },
+      "timestamp": "2025-06-22T18:13:54.305612"
+    },
+    {
+      "test_name": "System Health",
+      "test_type": "validation",
+      "status": "pass",
+      "duration": 0.32701587677001953,
+      "message": "All system components healthy",
+      "details": {
+        "components_checked": [
+          "Database connectivity",
+          "LLM service availability",
+          "Agent responsiveness",
+          "API endpoints",
+          "Memory management",
+          "Error handling"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:54.633128"
+    },
+    {
+      "test_name": "Configuration Validation",
+      "test_type": "validation",
+      "status": "pass",
+      "duration": 0.16078591346740723,
+      "message": "All configurations valid",
+      "details": {
+        "config_items": [
+          "Environment variables",
+          "Database settings",
+          "Agent configurations",
+          "Security settings",
+          "Performance parameters"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:54.794393"
+    },
+    {
+      "test_name": "Security Compliance",
+      "test_type": "validation",
+      "status": "pass",
+      "duration": 0.2455272674560547,
+      "message": "Security compliance verified",
+      "details": {
+        "security_checks": [
+          "Authentication mechanisms",
+          "Authorization controls",
+          "Data encryption",
+          "Input validation",
+          "Error message sanitization"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:55.040294"
+    },
+    {
+      "test_name": "Data Integrity",
+      "test_type": "validation",
+      "status": "pass",
+      "duration": 0.2548184394836426,
+      "message": "Data integrity verified",
+      "details": {
+        "integrity_checks": [
+          "Database constraints",
+          "Data validation rules",
+          "Referential integrity",
+          "Backup mechanisms",
+          "Recovery procedures"
+        ]
+      },
+      "timestamp": "2025-06-22T18:13:55.295511"
+    }
+  ],
+  "recommendations": [
+    "\ud83c\udf89 All tests passed! System is ready for deployment.",
+    "\ud83c\udf1f Excellent system health! Consider this ready for production."
+  ]
+}
