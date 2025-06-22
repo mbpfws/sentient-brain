@@ -30,120 +30,173 @@ class UserIntentType(str, Enum):
     DEBUG_REQUEST = "debug_request"
     REFACTOR_REQUEST = "refactor_request"
     DOCUMENTATION_REQUEST = "documentation_request"
-    OPTIMIZATION_REQUEST = "optimization_request"
     ANALYSIS_REQUEST = "analysis_request"
     GENERAL_QUERY = "general_query"
 
 
 class WorkflowStatus(str, Enum):
-    """Status of a workflow execution."""
+    """Workflow execution status."""
     PENDING = "pending"
     RUNNING = "running"
-    PAUSED = "paused"
     COMPLETED = "completed"
     FAILED = "failed"
     CANCELLED = "cancelled"
 
 
 class AgentWorkflowType(str, Enum):
-    """Types of agent workflows."""
+    """Types of agent workflows in the system."""
     ORCHESTRATION = "orchestration"
     ARCHITECTURE_DESIGN = "architecture_design"
     CODE_ANALYSIS = "code_analysis"
     DEBUG_REFACTOR = "debug_refactor"
-    TASK_PLANNING = "task_planning"
     DOCUMENTATION = "documentation"
-    CLIENT_INTERACTION = "client_interaction"
+    TASK_PLANNING = "task_planning"
+    MEMORY_RETRIEVAL = "memory_retrieval"
 
 
 class UserIntent(BaseModel):
-    """Processed user intent with disambiguation."""
-    id: str = Field(default_factory=lambda: f"intent:{uuid4()}")
+    """User intent analysis and processing."""
+    id: str = Field(default_factory=lambda: str(uuid4()))
     raw_query: str
     intent_type: UserIntentType
     confidence: float = Field(ge=0.0, le=1.0)
-    
-    # Processed intent data
     entities: Dict[str, Any] = Field(default_factory=dict)
     parameters: Dict[str, Any] = Field(default_factory=dict)
     context: Dict[str, Any] = Field(default_factory=dict)
-    
-    # User proficiency assessment
     user_technical_level: str = "intermediate"  # novice, intermediate, expert
     preferred_mode: str = "guided"  # guided, autonomous
-    
-    # Intent resolution
-    next_actions: List[str] = Field(default_factory=list)
     required_clarifications: List[str] = Field(default_factory=list)
-    
+    processed_by: str
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    processed_by: Optional[str] = None
+
+
+class WorkflowNode(BaseModel):
+    """Individual node in a workflow."""
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    node_type: str  # agent, decision, action, memory
+    agent_type: Optional[str] = None
+    input_schema: Dict[str, Any] = Field(default_factory=dict)
+    output_schema: Dict[str, Any] = Field(default_factory=dict)
+    dependencies: List[str] = Field(default_factory=list)
+    conditions: Dict[str, Any] = Field(default_factory=dict)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
 
 
 class WorkflowState(BaseModel):
-    """State management for LangGraph workflows."""
-    id: str = Field(default_factory=lambda: f"workflow:{uuid4()}")
+    """State and progress of a workflow execution."""
+    id: str = Field(default_factory=lambda: str(uuid4()))
     workflow_type: AgentWorkflowType
     status: WorkflowStatus = WorkflowStatus.PENDING
-    
-    # Input and context
     initial_input: Dict[str, Any] = Field(default_factory=dict)
     current_state: Dict[str, Any] = Field(default_factory=dict)
+    final_output: Optional[Dict[str, Any]] = None
     context: Dict[str, Any] = Field(default_factory=dict)
     
-    # Execution tracking
+    # Workflow execution tracking
+    nodes: List[WorkflowNode] = Field(default_factory=list)
     current_node: Optional[str] = None
     completed_nodes: List[str] = Field(default_factory=list)
     failed_nodes: List[str] = Field(default_factory=list)
     
-    # Agent assignments
-    primary_agent: Optional[str] = None
+    # Agent involvement
     involved_agents: List[str] = Field(default_factory=list)
+    agent_states: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     
-    # Results and outputs
-    intermediate_results: Dict[str, Any] = Field(default_factory=dict)
-    final_output: Optional[Dict[str, Any]] = None
+    # Timing and metadata
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    duration_seconds: Optional[float] = None
     
     # Error handling
     errors: List[Dict[str, Any]] = Field(default_factory=list)
     retry_count: int = 0
     max_retries: int = 3
     
-    # Timing
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    # Memory and persistence
+    checkpoint_data: Dict[str, Any] = Field(default_factory=dict)
+    persistent_memory: Dict[str, Any] = Field(default_factory=dict)
 
 
-class WorkflowNode(BaseModel):
-    """Individual node in a workflow graph."""
-    id: str = Field(default_factory=lambda: f"node:{uuid4()}")
-    name: str
-    node_type: str  # agent, tool, decision, parallel, etc.
+class AgentTask(BaseModel):
+    """Individual task within a workflow assigned to an agent."""
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    workflow_id: str
+    agent_type: str
+    task_type: str
+    priority: int = 1  # 1 = highest, 5 = lowest
     
-    # Node configuration
-    agent_type: Optional[str] = None
-    function_name: Optional[str] = None
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    
-    # Dependencies and flow
-    dependencies: List[str] = Field(default_factory=list)
-    next_nodes: List[str] = Field(default_factory=list)
-    conditional_edges: Dict[str, str] = Field(default_factory=dict)
-    
-    # Execution state
-    status: WorkflowStatus = WorkflowStatus.PENDING
-    input_data: Optional[Dict[str, Any]] = None
+    input_data: Dict[str, Any] = Field(default_factory=dict)
     output_data: Optional[Dict[str, Any]] = None
     
-    # Error handling
-    error_message: Optional[str] = None
-    retry_count: int = 0
-    
-    # Timing
+    status: str = "pending"  # pending, running, completed, failed
+    assigned_at: datetime = Field(default_factory=datetime.utcnow)
     started_at: Optional[datetime] = None
     completed_at: Optional[datetime] = None
+    
+    dependencies: List[str] = Field(default_factory=list)
+    blockers: List[str] = Field(default_factory=list)
+    
+    error_message: Optional[str] = None
+    retry_count: int = 0
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class WorkflowTemplate(BaseModel):
+    """Template for creating standardized workflows."""
+    id: str = Field(default_factory=lambda: str(uuid4()))
+    name: str
+    description: str
+    workflow_type: AgentWorkflowType
+    version: str = "1.0.0"
+    
+    # Template structure
+    node_templates: List[WorkflowNode] = Field(default_factory=list)
+    default_parameters: Dict[str, Any] = Field(default_factory=dict)
+    required_inputs: List[str] = Field(default_factory=list)
+    expected_outputs: List[str] = Field(default_factory=list)
+    
+    # Configuration
+    timeout_minutes: int = 30
+    max_retries: int = 3
+    parallel_execution: bool = False
+    
+    # Metadata
+    created_by: str
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    tags: List[str] = Field(default_factory=list)
+    usage_count: int = 0
+
+
+class LangGraphState(BaseModel):
+    """State object for LangGraph integration."""
+    workflow_id: str
+    current_step: str
+    step_count: int = 0
+    max_steps: int = 100
+    
+    # Data flow
+    input_data: Dict[str, Any] = Field(default_factory=dict)
+    output_data: Dict[str, Any] = Field(default_factory=dict)
+    intermediate_results: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
+    
+    # Agent coordination
+    active_agents: List[str] = Field(default_factory=list)
+    agent_communications: List[Dict[str, Any]] = Field(default_factory=list)
+    shared_memory: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Control flow
+    next_steps: List[str] = Field(default_factory=list)
+    conditional_branches: Dict[str, Any] = Field(default_factory=dict)
+    loop_state: Dict[str, Any] = Field(default_factory=dict)
+    
+    # Error handling
+    errors: List[str] = Field(default_factory=list)
+    warnings: List[str] = Field(default_factory=list)
+    
+    # Timing
+    step_start_time: Optional[datetime] = None
+    total_execution_time: float = 0.0
 
 
 class AgentCollaboration(BaseModel):
@@ -248,31 +301,6 @@ class DecisionPoint(BaseModel):
     # Timing
     created_at: datetime = Field(default_factory=datetime.utcnow)
     deadline: Optional[datetime] = None
-
-
-class WorkflowTemplate(BaseModel):
-    """Reusable workflow templates."""
-    id: str = Field(default_factory=lambda: f"template:{uuid4()}")
-    name: str
-    description: str
-    workflow_type: AgentWorkflowType
-    
-    # Template structure
-    nodes: List[Dict[str, Any]] = Field(default_factory=list)
-    edges: List[Dict[str, Any]] = Field(default_factory=list)
-    
-    # Configuration
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-    required_agents: List[str] = Field(default_factory=list)
-    estimated_duration: Optional[int] = None  # in minutes
-    
-    # Usage tracking
-    usage_count: int = 0
-    success_rate: float = 0.0
-    
-    created_at: datetime = Field(default_factory=datetime.utcnow)
-    updated_at: datetime = Field(default_factory=datetime.utcnow)
-    created_by: Optional[str] = None
 
 
 class ExecutionResult(BaseModel):
