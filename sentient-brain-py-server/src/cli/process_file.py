@@ -6,10 +6,15 @@ import os
 import sys
 import argparse
 
-# Ensure the src directory is on the Python path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the project root to Python path to resolve relative imports
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.insert(0, project_root)
 
-from services.code_graph_service import CodeGraphService
+try:
+    from src.services.code_graph_service import CodeGraphService
+except ImportError:
+    # Fallback for when running as module
+    from services.code_graph_service import CodeGraphService
 
 def main():
     parser = argparse.ArgumentParser(description="Process a source code file for the knowledge graph.")
@@ -26,16 +31,21 @@ def main():
     with open(file_path, 'r', encoding='utf-8') as f:
         source_code = f.read()
 
-    # Here we would initialize the service and pass all args
-    # For now, we just call the existing process_file method
-    # The commit info will be used in the next step.
-    service = CodeGraphService()
-    service.process_file(
-        file_path=file_path, 
-        source_code=source_code,
-        commit_hash=args.commit_hash,
-        commit_author=args.commit_author
-    )
+    try:
+        # Initialize the service and process the file
+        service = CodeGraphService()
+        service.process_file(
+            file_path=file_path, 
+            source_code=source_code,
+            commit_hash=args.commit_hash,
+            commit_author=args.commit_author
+        )
+        print(f"✓ Successfully processed {file_path}")
+        if args.commit_hash:
+            print(f"✓ Linked to commit {args.commit_hash}")
+    except Exception as e:
+        print(f"✗ Error processing {file_path}: {e}")
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

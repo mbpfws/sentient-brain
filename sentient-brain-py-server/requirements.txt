@@ -6,7 +6,7 @@ uvicorn[standard]==0.24.0
 grpcio
 grpcio-tools
 protobuf
-pydantic-graph
+# pydantic-graph  # Temporarily removed due to httpx version conflict
 
 # LLM & AI Services
 sentence-transformers==2.2.2
@@ -42,3 +42,8 @@ rich==13.7.0
 tqdm
 python-dotenv==1.0.0
 watchdog==3.0.0
+
+# Code Parsing (AST & Tree-sitter)
+tree-sitter==0.24.0
+tree-sitter-javascript==0.23.1
+tree-sitter-typescript==0.23.2

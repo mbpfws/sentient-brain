@@ -10,13 +10,14 @@ from typing import List
 
 from .base import ICodeParser
 from .python_parser import PythonParser
+from .typescript_parser import TypeScriptParser
 
 
 class ParserRegistry:
     """Holds instantiated parser plugins and selects one by extension."""
 
     def __init__(self) -> None:
-        self._parsers: List[ICodeParser] = [PythonParser()]
+        self._parsers: List[ICodeParser] = [PythonParser(), TypeScriptParser()]
 
     def get_parser_for_ext(self, ext: str) -> ICodeParser | None:  # noqa: D401
         for parser in self._parsers:
