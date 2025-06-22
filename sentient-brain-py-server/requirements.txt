@@ -1,0 +1,44 @@
+# Main Application Framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+
+# Communication & Agentics
+grpcio
+grpcio-tools
+protobuf
+pydantic-graph
+
+# LLM & AI Services
+sentence-transformers==2.2.2
+transformers==4.36.2
+torch==2.1.2
+google-generativeai==0.3.2
+groq==0.4.1
+
+# Data Storage & Search
+weaviate-client==4.4.1
+neo4j==5.15.0
+rank-bm25
+
+# Data Handling & Validation
+pydantic==2.5.0
+pydantic-settings
+
+# LangChain Utilities (for specific tasks like text splitting)
+langchain-community
+langchain-core
+langchain-text-splitters
+
+# Web/File Ingestion & Parsing
+playwright==1.40.0
+beautifulsoup4==4.12.2
+unstructured==0.11.8
+html2text
+
+# Utilities & Resilience
+tenacity==8.2.3
+structlog==23.2.0
+rich==13.7.0
+tqdm
+python-dotenv==1.0.0
+watchdog==3.0.0
