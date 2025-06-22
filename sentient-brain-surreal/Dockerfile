@@ -1,13 +1,13 @@
-# Multi-stage build for the Sentient Brain Multi-Agent System
+# Optimized Dockerfile for Smithery.ai deployment
 FROM python:3.11-slim as builder
 
-# Set environment variables
+# Set environment variables for build optimization
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1
 
-# Install system dependencies
+# Install system dependencies for building
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -19,23 +19,24 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Copy and install Python dependencies
-COPY requirements.txt .
+COPY requirements.txt pyproject.toml ./
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
-# Production stage
+# Production stage - optimized for Smithery
 FROM python:3.11-slim as production
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PATH="/opt/venv/bin:$PATH"
+    PATH="/opt/venv/bin:$PATH" \
+    PORT=8000
 
 # Install runtime dependencies
 RUN apt-get update && apt-get install -y \
     curl \
     && rm -rf /var/lib/apt/lists/* \
-    && groupadd -r appuser && useradd -r -g appuser appuser
+    && groupadd -r sentient && useradd -r -g sentient sentient
 
 # Copy virtual environment from builder stage
 COPY --from=builder /opt/venv /opt/venv
@@ -43,22 +44,22 @@ COPY --from=builder /opt/venv /opt/venv
 # Create application directory
 WORKDIR /app
 
-# Copy application code
-COPY --chown=appuser:appuser src/ ./src/
-COPY --chown=appuser:appuser pyproject.toml ./
+# Copy application code with proper ownership
+COPY --chown=sentient:sentient . .
 
-# Create logs directory
-RUN mkdir -p /app/logs && chown appuser:appuser /app/logs
+# Create necessary directories
+RUN mkdir -p /app/logs /app/data /app/temp && \
+    chown -R sentient:sentient /app
 
-# Switch to non-root user
-USER appuser
+# Switch to non-root user for security
+USER sentient
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/api/v1/health || exit 1
+# Health check for Smithery monitoring
+HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
+    CMD curl -f http://localhost:${PORT}/api/v1/health || exit 1
 
-# Expose port
-EXPOSE 8000
+# Expose port (Smithery will map this)
+EXPOSE ${PORT}
 
-# Start command
-CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# Optimized start command for Smithery
+CMD ["python", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1", "--access-log"]
