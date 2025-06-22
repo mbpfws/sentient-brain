@@ -17,7 +17,6 @@ import google.genai as genai
 
 __all__ = ["GeminiGenerative"]
 
-
 class GeminiGenerative:
     """Lightweight helper for text-generation / reasoning with Gemini models."""
 

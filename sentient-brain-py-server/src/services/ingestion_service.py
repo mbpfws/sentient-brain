@@ -53,6 +53,7 @@ class IngestionService:
                 name=code_chunk_collection_name,
                 vectorizer_config=Configure.Vectorizer.none(),
                 properties=[
+                    wvc.Property(name="source_id", data_type=wvc.DataType.TEXT),  # Original Neo4j node ID
                     wvc.Property(name="file_path", data_type=wvc.DataType.TEXT),
                     wvc.Property(name="node_type", data_type=wvc.DataType.TEXT),
                     wvc.Property(name="name", data_type=wvc.DataType.TEXT),

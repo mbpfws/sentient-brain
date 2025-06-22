@@ -1,4 +1,6 @@
+import os
 import ast
+import uuid
 from typing import List, Tuple, Dict, Any
 
 from ..models.graph_models import CodeNode, CodeRelationship, NodeType, RelationshipType
@@ -142,22 +144,31 @@ class CodeGraphService:
         """Persists the graph nodes and relationships to Neo4j."""
         with get_neo4j_session() as session:
             for node in nodes:
+                # Neo4j does not allow nested maps as property values, so exclude metadata
+                base_props = node.model_dump(exclude={"id", "node_type", "metadata"})
                 session.run(
-                    """MERGE (n {id: $id}) 
+                    """MERGE (n {id: $id})
                        SET n += $props, n.node_type = $node_type""",
                     id=node.id,
-                    props=node.dict(exclude={'id', 'node_type'}),
-                    node_type=node.node_type.value
+                    props=base_props,
+                    node_type=node.node_type.value,
                 )
             for rel in relationships:
-                session.run(
+                if rel.metadata:
+                    props_clause = "SET r += $props"
+                else:
+                    props_clause = ""
+                cypher = (
                     """MATCH (a {id: $source_id}), (b {id: $target_id})
                        MERGE (a)-[r:%s {type: $type}]->(b)
-                       SET r += $props""" % rel.type.value,
+                       %s""" % (rel.type.value, props_clause)
+                )
+                session.run(
+                    cypher,
                     source_id=rel.source_id,
                     target_id=rel.target_id,
                     type=rel.type.value,
-                    props=rel.metadata
+                    props=rel.metadata if rel.metadata else {},
                 )
         print(f"Persisted {len(nodes)} nodes and {len(relationships)} relationships.")
 
@@ -186,9 +197,13 @@ class CodeGraphService:
         # Get embeddings
         vectors = self.embedder.embed(contents_to_embed)
 
-        # Insert each code chunk individually (v4 client does not support .batch())
+        # Insert each code chunk individually with proper UUID format
         for i, node in enumerate(nodes_to_embed):
+            # Generate a proper UUID4 for Weaviate
+            chunk_uuid = str(uuid.uuid4())
+            
             data_object = {
+                "source_id": node.id,  # Store original Neo4j ID for linking
                 "file_path": file_path,
                 "node_type": node.node_type.value,
                 "name": node.name,
@@ -196,11 +211,16 @@ class CodeGraphService:
                 "end_line": node.end_line,
                 "content": contents_to_embed[i],
             }
-            code_chunk_collection.data.insert(
-                properties=data_object,
-                vector=vectors[i],
-                uuid=node.id  # Use the same ID as Neo4j for consistency
-            )
+            
+            try:
+                code_chunk_collection.data.insert(
+                    properties=data_object,
+                    vector=vectors[i],
+                    uuid=chunk_uuid  # Use proper UUID format
+                )
+                print(f"[WEAVIATE] Inserted chunk {node.name} with UUID: {chunk_uuid}", flush=True)
+            except Exception as e:
+                print(f"[WEAVIATE] Error inserting chunk {node.name}: {e}", flush=True)
         
         print(f"Synced {len(nodes_to_embed)} code chunks to Weaviate for file {file_path}.")
 
