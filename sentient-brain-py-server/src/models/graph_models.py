@@ -9,11 +9,14 @@ class NodeType(str, Enum):
     METHOD = "METHOD"
     IMPORT = "IMPORT"
     VARIABLE = "VARIABLE"
+    BLOCK = "BLOCK"
+    COMMIT = "COMMIT"
 
 class RelationshipType(str, Enum):
     CONTAINS = "CONTAINS"
     IMPORTS = "IMPORTS"
     CALLS = "CALLS"
+    MODIFIED = "MODIFIED"
     DEFINES = "DEFINES"
     INSTANTIATES = "INSTANTIATES"
 

@@ -146,6 +146,28 @@ def get_context(file: str):
 
 # -------------------------------------------------
 
+from pydantic import BaseModel  # type: ignore
+
+class BackpopRequest(BaseModel):
+    token: str | None = None  # simple optional auth
+
+@app.post("/admin/backpopulate", tags=["Admin"])
+def admin_backpopulate(req: BackpopRequest):
+    """Trigger back-population of missing code chunks (admin use)."""
+    # optional trivial auth
+    expected = os.getenv("ADMIN_TOKEN")
+    if expected and req.token != expected:
+        return {"status": "error", "message": "unauthorized"}
+
+    try:
+        svc: CodeGraphService = app.state.code_graph_service  # type: ignore
+        svc.backpopulate_missing_chunks()
+        return {"status": "ok", "message": "backpopulation completed"}
+    except Exception as exc:
+        return {"status": "error", "message": str(exc)}
+
+# -------------------------------------------------
+
 @app.get("/", tags=["Health Check"])
 def read_root():
     """Check if the server is running."""
