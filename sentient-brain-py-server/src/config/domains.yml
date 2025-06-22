@@ -1,0 +1,64 @@
+# Sentient Brain - Codebase Domain Taxonomy
+# This file defines rules for classifying files into domains and roles.
+
+# Order matters: first match wins.
+domains:
+  - name: Build & CI/CD
+    patterns: ["*.yml", "*.yaml", "Dockerfile", "Jenkinsfile", "Makefile", ".gitlab-ci.yml", ".circleci/", "build.gradle", "pom.xml"]
+    tags: ["cicd", "build"]
+
+  - name: Infrastructure
+    patterns: ["*.tf", "*.tfvars", "*.hcl"]
+    tags: ["iac", "terraform"]
+
+  - name: Configuration
+    patterns: ["*.json", "*.xml", "*.ini", "*.toml", "*.conf", ".env", ".env.*"]
+    tags: ["config"]
+
+  - name: Documentation
+    patterns: ["*.md", "*.rst", "*.adoc", "*.wiki", "openapi.yml", "swagger.json"]
+    tags: ["docs"]
+
+  - name: Testing
+    patterns: ["*test*", "*spec*", "tests/", "specs/"]
+    tags: ["testing"]
+
+  - name: Security
+    patterns: ["*security*", "*auth*", "*access*", "*policy*", "*jwt*"]
+    tags: ["security", "auth"]
+
+  - name: Database
+    patterns: ["*sql*", "*prisma*", "*schema*", "*migration*", "*orm*"]
+    tags: ["database", "data-model"]
+
+  - name: API & Backend
+    patterns: ["*controller*", "*router*", "*service*", "*api*", "*handler*", "main.py", "index.ts"]
+    tags: ["backend", "api"]
+
+  - name: Frontend & UI
+    patterns: ["*.html", "*.css", "*.scss", "*.jsx", "*.tsx", "*component*", "*view*", "*page*"]
+    tags: ["frontend", "ui"]
+
+  - name: Utilities & Tooling
+    patterns: ["scripts/", "tools/", "utils/", "helpers/"]
+    tags: ["utils", "tooling"]
+
+# Default fallback
+  - name: Application Logic
+    patterns: ["*.py", "*.js", "*.ts", "*.java", "*.go", "*.rs"]
+    tags: ["backend", "logic"]
+
+# File role definitions
+roles:
+  - name: Entrypoint
+    patterns: ["main.py", "index.ts", "index.js", "app.py"]
+  - name: Library
+    patterns: ["src/", "lib/"]
+  - name: Test
+    patterns: ["tests/", "test/", "__tests__/"]
+  - name: Configuration
+    patterns: ["config/", "settings/", "*.json", "*.yml", ".env"]
+  - name: Script
+    patterns: ["scripts/", "tools/"]
+  - name: Documentation
+    patterns: ["docs/", "README.md"]
