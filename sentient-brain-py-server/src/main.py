@@ -5,7 +5,8 @@ from contextlib import asynccontextmanager
 from .services.ingestion_service import IngestionService
 from .services.code_graph_service import CodeGraphService
 from .services.file_watcher import FileWatcherService
-from .db.neo4j_driver import get_neo4j_driver, close_neo4j_driver
+from .db.neo4j_driver import get_neo4j_driver, close_neo4j_driver, get_neo4j_session
+from .db.weaviate_client import get_weaviate_client
 from .models.document_models import DocumentSource, DocumentType, IngestionStatus
 
 # Dependency to get the ingestion service
@@ -77,10 +78,13 @@ def _get_weaviate_counts() -> dict:
         counts = {}
         for cls in ["CodeChunk", "DocumentChunk", "DocumentSource"]:
             try:
-                coll: Collection = client.collections.get(cls)
-                counts[cls] = coll.aggregate.over_all.total_count()
-            except Exception:
-                counts[cls] = "n/a"
+                coll = client.collections.get(cls)
+                # Use fetch_objects with limit=0 to get count
+                result = coll.query.fetch_objects(limit=10000)  # Get actual objects
+                counts[cls] = len(result.objects) if hasattr(result, 'objects') else 0
+            except Exception as e:
+                print(f"[HEALTH] Error counting {cls}: {e}", flush=True)
+                counts[cls] = "error"
         return counts
     except Exception as exc:
         return {"error": str(exc)}
