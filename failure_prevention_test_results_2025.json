@@ -1,0 +1,91 @@
+{
+  "timestamp": "2025-06-22 17:37:22",
+  "total_tests": 9,
+  "passed": 8,
+  "failed": 0,
+  "skipped": 1,
+  "success_rate": "88.9%",
+  "dependency_tests": {
+    "passed": 5,
+    "failed": 0,
+    "success_rate": "100.0%"
+  },
+  "failure_patterns_tested": {
+    "Ambiguous Prompt (89% failure rate)": 2,
+    "Full-Stack Development (75% failure rate)": 3,
+    "Context Management (68-72% failure rate)": 1,
+    "Improvement Request (65% failure rate)": 2
+  },
+  "detailed_results": [
+    {
+      "name": "ambiguous_prompt_detection",
+      "result": "PASS",
+      "execution_time": 3.528594970703125e-05,
+      "failure_pattern": "Ambiguous Prompt (89% failure rate)",
+      "details": null
+    },
+    {
+      "name": "ambiguous_scope_handling",
+      "result": "PASS",
+      "execution_time": 7.62939453125e-06,
+      "failure_pattern": "Ambiguous Prompt (89% failure rate)",
+      "details": null
+    },
+    {
+      "name": "vague_improvement_request",
+      "result": "PASS",
+      "execution_time": 6.67572021484375e-06,
+      "failure_pattern": "Ambiguous Prompt (89% failure rate)",
+      "details": null
+    },
+    {
+      "name": "api_contract_validation",
+      "result": "PASS",
+      "execution_time": 7.152557373046875e-06,
+      "failure_pattern": "Full-Stack Development (75% failure rate)",
+      "details": null
+    },
+    {
+      "name": "database_schema_consistency",
+      "result": "PASS",
+      "execution_time": 5.0067901611328125e-06,
+      "failure_pattern": "Full-Stack Development (75% failure rate)",
+      "details": null
+    },
+    {
+      "name": "dependency_compatibility",
+      "result": "PASS",
+      "execution_time": 4.76837158203125e-06,
+      "failure_pattern": "Full-Stack Development (75% failure rate)",
+      "details": null
+    },
+    {
+      "name": "token_limit_management",
+      "result": "SKIP",
+      "execution_time": 4.0531158447265625e-06,
+      "failure_pattern": "Context Management (68-72% failure rate)",
+      "details": null
+    },
+    {
+      "name": "context_relevance_filtering",
+      "result": "PASS",
+      "execution_time": 1.1444091796875e-05,
+      "failure_pattern": "Context Management (68-72% failure rate)",
+      "details": null
+    },
+    {
+      "name": "incremental_improvement_tracking",
+      "result": "PASS",
+      "execution_time": 5.7220458984375e-06,
+      "failure_pattern": "Improvement Request (65% failure rate)",
+      "details": null
+    }
+  ],
+  "dependency_results": {
+    "google_genai_import": "PASS",
+    "groq_import": "PASS",
+    "fastapi_functionality": "PASS",
+    "surrealdb_import": "PASS",
+    "pydantic_functionality": "PASS"
+  }
+}

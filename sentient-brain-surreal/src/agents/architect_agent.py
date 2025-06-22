@@ -2,6 +2,11 @@
 The Architect Agent - Design & Planning Specialist.
 
 Responsible for conceptualizing, designing, and detailing project architecture.
+Enhanced with failure prevention mechanisms to address:
+- 89% Ambiguous Prompt Failures
+- 75% Full-Stack Development Failures
+- 68-72% Context Management Failures
+
 Operates in two modes based on user proficiency:
 1. Guided Enhancement (novice/intermediate users)
 2. Standardized Optimization (experienced users)
@@ -11,6 +16,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from enum import Enum
 import logging
 from datetime import datetime
+import json
 
 from ..models.memory_layers import GrandPlan, Task, Milestone, PlanStatus, TaskPriority
 from ..models.agent_models import AgentConfig, AgentMessage, AgentResponse
@@ -34,10 +40,22 @@ class UserProficiency(str, Enum):
     EXPERT = "expert"
 
 
+class RequirementValidationStatus(str, Enum):
+    """Status of requirement validation."""
+    INSUFFICIENT = "insufficient"
+    AMBIGUOUS = "ambiguous"
+    CONFLICTING = "conflicting"
+    VALIDATED = "validated"
+
+
 class ArchitectAgent:
     """
     The Architect Agent specializes in design and planning.
-    Adapts approach based on user technical proficiency.
+    Enhanced with failure prevention mechanisms:
+    - Structured requirement validation
+    - Interactive ambiguity resolution
+    - Policy enforcement nodes
+    - Full-stack coordination patterns
     """
     
     def __init__(
@@ -52,6 +70,11 @@ class ArchitectAgent:
         self.current_mode = None
         self.user_proficiency = None
         
+        # Failure prevention components
+        self.requirement_validator = RequirementValidator(llm_service)
+        self.policy_enforcer = PolicyEnforcer(memory_service)
+        self.context_manager = ArchitectContextManager()
+        
         # Mode-specific prompts
         self.mode_prompts = {
             ArchitectMode.GUIDED_ENHANCEMENT: self._get_guided_enhancement_prompt(),
@@ -61,6 +84,9 @@ class ArchitectAgent:
     async def initialize(self, user_context: Dict[str, Any]) -> AgentResponse:
         """Initialize the architect agent and determine operating mode."""
         try:
+            # Load architectural policies from memory
+            await self.policy_enforcer.load_policies()
+            
             # Assess user proficiency from initial context
             self.user_proficiency = await self._assess_user_proficiency(user_context)
             
@@ -75,10 +101,11 @@ class ArchitectAgent:
             return AgentResponse(
                 agent_id=self.config.agent_id,
                 success=True,
-                message=f"Architect Agent ready in {self.current_mode} mode",
+                message=f"Architect Agent ready in {self.current_mode} mode with failure prevention enabled",
                 data={
                     "mode": self.current_mode,
-                    "user_proficiency": self.user_proficiency
+                    "user_proficiency": self.user_proficiency,
+                    "failure_prevention_active": True
                 }
             )
             
@@ -91,12 +118,27 @@ class ArchitectAgent:
             )
     
     async def process_design_request(self, message: AgentMessage) -> AgentResponse:
-        """Process a design request using the appropriate mode."""
+        """Process a design request with comprehensive failure prevention."""
         try:
+            # Step 1: Validate requirements to prevent ambiguous prompt failures
+            validation_result = await self.requirement_validator.validate_requirements(
+                message.content, 
+                message.metadata
+            )
+            
+            if validation_result.status != RequirementValidationStatus.VALIDATED:
+                return await self._handle_requirement_issues(validation_result, message)
+            
+            # Step 2: Check policy compliance
+            policy_check = await self.policy_enforcer.check_compliance(validation_result.requirements)
+            if not policy_check.compliant:
+                return await self._handle_policy_violations(policy_check, message)
+            
+            # Step 3: Process with appropriate mode
             if self.current_mode == ArchitectMode.GUIDED_ENHANCEMENT:
-                return await self._guided_enhancement_flow(message)
+                return await self._guided_enhancement_flow(message, validation_result)
             else:
-                return await self._standardized_optimization_flow(message)
+                return await self._standardized_optimization_flow(message, validation_result)
                 
         except Exception as e:
             logger.error(f"Failed to process design request: {e}")
@@ -105,6 +147,89 @@ class ArchitectAgent:
                 success=False,
                 error=str(e)
             )
+    
+    async def _handle_requirement_issues(
+        self, 
+        validation_result: 'ValidationResult', 
+        message: AgentMessage
+    ) -> AgentResponse:
+        """Handle requirement validation issues with interactive clarification."""
+        
+        if validation_result.status == RequirementValidationStatus.INSUFFICIENT:
+            clarification_questions = await self._generate_requirement_questions(
+                validation_result.missing_requirements
+            )
+            
+            return AgentResponse(
+                agent_id=self.config.agent_id,
+                success=True,
+                message="I need more information to create a robust design. Let me ask some specific questions:",
+                data={
+                    "status": "clarification_needed",
+                    "questions": clarification_questions,
+                    "missing_requirements": validation_result.missing_requirements,
+                    "next_step": "requirement_clarification"
+                }
+            )
+        
+        elif validation_result.status == RequirementValidationStatus.AMBIGUOUS:
+            disambiguation_options = await self._generate_disambiguation_options(
+                validation_result.ambiguous_items
+            )
+            
+            return AgentResponse(
+                agent_id=self.config.agent_id,
+                success=True,
+                message="I found some ambiguities in your requirements. Please help me clarify:",
+                data={
+                    "status": "disambiguation_needed",
+                    "ambiguities": validation_result.ambiguous_items,
+                    "options": disambiguation_options,
+                    "next_step": "disambiguation"
+                }
+            )
+        
+        elif validation_result.status == RequirementValidationStatus.CONFLICTING:
+            conflict_resolution = await self._generate_conflict_resolution(
+                validation_result.conflicts
+            )
+            
+            return AgentResponse(
+                agent_id=self.config.agent_id,
+                success=True,
+                message="I detected conflicting requirements. Let's resolve these:",
+                data={
+                    "status": "conflict_resolution_needed",
+                    "conflicts": validation_result.conflicts,
+                    "resolution_options": conflict_resolution,
+                    "next_step": "conflict_resolution"
+                }
+            )
+        
+        return AgentResponse(
+            agent_id=self.config.agent_id,
+            success=False,
+            error="Unknown requirement validation status"
+        )
+
+    async def _handle_policy_violations(
+        self, 
+        policy_check: 'PolicyCheckResult', 
+        message: AgentMessage
+    ) -> AgentResponse:
+        """Handle policy compliance violations."""
+        
+        return AgentResponse(
+            agent_id=self.config.agent_id,
+            success=True,
+            message="I found some policy compliance issues that need to be addressed:",
+            data={
+                "status": "policy_violation",
+                "violations": policy_check.violations,
+                "recommendations": policy_check.recommendations,
+                "next_step": "policy_compliance"
+            }
+        )
     
     # ================================
     # USER PROFICIENCY ASSESSMENT
@@ -155,7 +280,7 @@ class ArchitectAgent:
     # GUIDED ENHANCEMENT MODE
     # ================================
     
-    async def _guided_enhancement_flow(self, message: AgentMessage) -> AgentResponse:
+    async def _guided_enhancement_flow(self, message: AgentMessage, validation_result: 'ValidationResult') -> AgentResponse:
         """
         Mode 1: Guided Enhancement for novice/intermediate users.
         Collaborative, turn-based interaction with structured guidance.
@@ -298,7 +423,7 @@ class ArchitectAgent:
     # STANDARDIZED OPTIMIZATION MODE
     # ================================
     
-    async def _standardized_optimization_flow(self, message: AgentMessage) -> AgentResponse:
+    async def _standardized_optimization_flow(self, message: AgentMessage, validation_result: 'ValidationResult') -> AgentResponse:
         """
         Mode 2: Standardized Optimization for experienced users.
         Focus on feasibility, optimization, and best-in-class alternatives.
